@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
-import { Check, Plus, Undo2 } from 'lucide-react';
-import { Button, Card, CategoryIcon, ConfirmButton, EmptyState, Field, MonthSwitcher, Sheet, Spinner, cx } from '../components/ui';
+import { ArrowCounterClockwise, CheckCircle, Plus, Repeat } from '@phosphor-icons/react';
+import { Button, Card, CategoryIcon, ConfirmButton, EmptyState, Field, MonthSwitcher, Select, Sheet, Spinner, cx } from '../components/ui';
 import {
   useCategories, useDeleteExpense, useDeleteRecurring, useMarkPaid, useRecurring, useRecurringPayments, useSaveRecurring,
 } from '../hooks/queries';
@@ -37,7 +37,7 @@ export default function RecurringPage() {
       </Card>
 
       {recurring.isPending || payments.isPending ? <Spinner /> : rows.length === 0 ? (
-        <EmptyState title="لا توجد مصاريف ثابتة بعد">
+        <EmptyState icon={Repeat} title="لا توجد مصاريف ثابتة بعد">
           أضف رواتب العمالة والفواتير والاشتراكات مرة واحدة، ثم سجّل دفعها كل شهر بضغطة.
         </EmptyState>
       ) : (
@@ -51,7 +51,7 @@ export default function RecurringPage() {
       )}
 
       <Button variant="secondary" className="w-full" onClick={() => setEditing({ open: true })}>
-        <Plus className="size-5" /> إضافة مصروف ثابت
+        <Plus className="size-5" weight="bold" /> إضافة مصروف ثابت
       </Button>
 
       <Sheet open={editing.open} onOpenChange={(o) => setEditing((s) => ({ ...s, open: o }))}
@@ -81,7 +81,7 @@ function RecurringItem({ row, month, today, category, onEdit }: {
   const payDate = monthOf(today) === month ? today : dueDate;
 
   return (
-    <div className="flex items-center gap-3 rounded-card bg-surface p-3">
+    <div className="flex items-center gap-3 rounded-card bg-surface p-3 shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
       <button type="button" onClick={onEdit} className="flex min-w-0 flex-1 items-center gap-3 text-start">
         <CategoryIcon category={category} />
         <span className="min-w-0">
@@ -95,9 +95,9 @@ function RecurringItem({ row, month, today, category, onEdit }: {
       </button>
       <span className="num shrink-0 font-semibold">{formatSAR(payment?.amount ?? item.amount)}</span>
       {payment ? (
-        <ConfirmButton className="h-10 px-3 text-sm" confirmText="إلغاء الدفع؟" loading={undo.isPending}
+        <ConfirmButton className="h-10 gap-1 bg-brand-soft px-3 text-sm text-brand" confirmText="إلغاء الدفع؟" loading={undo.isPending}
           onConfirm={() => undo.mutate(payment)}>
-          <Check className="size-4" /><span className="sr-only">مدفوع، اضغط للتراجع</span><Undo2 className="size-3.5 opacity-60" />
+          <CheckCircle className="size-5" weight="fill" /><span className="text-sm">مدفوع</span><ArrowCounterClockwise className="size-3.5 opacity-60" weight="bold" />
         </ConfirmButton>
       ) : (
         <Button className="h-10 px-3 text-sm" loading={markPaid.isPending}
@@ -142,15 +142,11 @@ function RecurringForm({ item, onDone }: { item?: Recurring; onDone: () => void 
         <Field label="يوم الاستحقاق" inputMode="numeric" dir="ltr" value={day} onChange={(e) => setDay(e.target.value.replace(/\D/g, ''))}
           hint="إذا كان الشهر أقصر يُعتبر آخر يوم فيه" />
       </div>
-      <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-muted">التصنيف</span>
-        <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}
-          className="h-12 w-full rounded-2xl border border-line bg-surface px-4 outline-none focus:border-brand">
-          <option value="" disabled>اختر التصنيف</option>
-          {categories.filter((c) => !c.is_archived || c.id === item?.category_id)
-            .map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-      </label>
+      <Select label="التصنيف" showLabel value={categoryId} onChange={setCategoryId}
+        options={[
+          { value: '', label: 'اختر التصنيف', disabled: true },
+          ...categories.filter((c) => !c.is_archived || c.id === item?.category_id).map((c) => ({ value: c.id, label: c.name })),
+        ]} />
       {item && (
         <label className="flex items-center justify-between rounded-2xl bg-surface-2 px-4 py-3">
           <span>

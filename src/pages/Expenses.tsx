@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { CalendarRange, FileSpreadsheet, FileText, Search, X } from 'lucide-react';
+import { CalendarDots, FilePdf, FileXls, FunnelSimple, MagnifyingGlass, Receipt, Tag, User, X } from '@phosphor-icons/react';
 import { ExpenseGroups } from '../components/ExpenseList';
 import { Button, EmptyState, IconButton, MonthSwitcher, Select, Spinner } from '../components/ui';
 import { useHousehold } from '../hooks/household';
@@ -61,8 +61,8 @@ export default function Expenses() {
           {!custom && <MonthSwitcher month={month} onChange={setMonth} />}
           <IconButton label={custom ? 'العودة للعرض الشهري' : 'نطاق تاريخ مخصص'}
             onClick={() => { setCustom(!custom); setRange({ from: month, to: monthEnd(month) }); }}
-            className={custom ? 'bg-brand-soft text-brand' : ''}>
-            <CalendarRange className="size-5" />
+            className={custom ? 'bg-brand-soft text-brand' : 'bg-surface shadow-sm'}>
+            <CalendarDots className="size-5" weight={custom ? 'fill' : 'regular'} />
           </IconButton>
         </div>
       </header>
@@ -71,29 +71,29 @@ export default function Expenses() {
         <div className="grid grid-cols-2 gap-2">
           <label className="text-sm text-muted">من
             <input type="date" value={range.from} max={range.to} onChange={(e) => e.target.value && setRange({ ...range, from: e.target.value })}
-              className="mt-1 h-11 w-full rounded-2xl border border-line bg-surface px-3 text-ink" />
+              className="mt-1 h-12 w-full rounded-2xl border border-line bg-surface px-3 text-base text-ink" />
           </label>
           <label className="text-sm text-muted">إلى
             <input type="date" value={range.to} min={range.from} onChange={(e) => e.target.value && setRange({ ...range, to: e.target.value })}
-              className="mt-1 h-11 w-full rounded-2xl border border-line bg-surface px-3 text-ink" />
+              className="mt-1 h-12 w-full rounded-2xl border border-line bg-surface px-3 text-base text-ink" />
           </label>
         </div>
       )}
 
       <div className="relative">
-        <Search className="pointer-events-none absolute start-4 top-1/2 size-4 -translate-y-1/2 text-muted" />
+        <MagnifyingGlass className="pointer-events-none absolute start-4 top-1/2 size-5 -translate-y-1/2 text-muted" />
         <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث في الوصف أو التصنيف أو المبلغ"
-          className="h-11 w-full rounded-2xl border border-line bg-surface ps-10 pe-4 outline-none focus:border-brand" />
+          className="h-12 w-full rounded-2xl border border-line bg-surface ps-11 pe-4 text-base outline-none focus:border-brand focus:ring-4 focus:ring-brand/10" />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <Select label="التصنيف" value={categoryId} onChange={setCategoryId}
+        <Select label="التصنيف" icon={Tag} value={categoryId} onChange={setCategoryId}
           options={[{ value: '', label: 'كل التصنيفات' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} />
-        <Select label="الشخص" value={memberId} onChange={setMemberId}
+        <Select label="الشخص" icon={User} value={memberId} onChange={setMemberId}
           options={[{ value: '', label: 'الجميع' }, ...members.map((m) => ({ value: m.user_id, label: m.display_name }))]} />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card bg-surface px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card bg-surface px-5 py-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
         <div>
           <p className="text-sm text-muted">{filtered.length} عملية{hasFilters && ' مطابقة'}</p>
           <p className="num text-2xl font-bold">{formatSAR(total)}</p>
@@ -102,20 +102,20 @@ export default function Expenses() {
           {hasFilters && (
             <Button variant="ghost" className="h-10 px-3 text-sm"
               onClick={() => { setQuery(''); setCategoryId(''); setMemberId(''); }}>
-              <X className="size-4" /> مسح التصفية
+              <X className="size-4" weight="bold" /> مسح
             </Button>
           )}
           <Button variant="secondary" className="h-10 px-3 text-sm" onClick={onExcel} loading={exporting} disabled={!filtered.length}>
-            <FileSpreadsheet className="size-4" /> Excel
+            <FileXls className="size-5 text-[#1D7044]" weight="duotone" /> Excel
           </Button>
           <Button variant="secondary" className="h-10 px-3 text-sm" onClick={onPdf} disabled={!filtered.length}>
-            <FileText className="size-4" /> PDF
+            <FilePdf className="size-5 text-[#C2410C]" weight="duotone" /> PDF
           </Button>
         </div>
       </div>
 
       {isPending ? <Spinner /> : filtered.length === 0
-        ? <EmptyState title={hasFilters ? 'لا توجد نتائج مطابقة' : 'لا توجد عمليات في هذه الفترة'}>
+        ? <EmptyState icon={hasFilters ? FunnelSimple : Receipt} title={hasFilters ? 'لا توجد نتائج مطابقة' : 'لا توجد عمليات في هذه الفترة'}>
             {hasFilters ? 'جرّب تغيير كلمات البحث أو التصفية' : 'اضغط زر + لإضافة مصروف'}
           </EmptyState>
         : <ExpenseGroups expenses={filtered} categories={categories} />}

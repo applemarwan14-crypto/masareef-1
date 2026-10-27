@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import { Button, Field } from '../components/ui';
+import { Logo } from '../components/Logo';
 import { translateError } from '../lib/api';
 import { supabase } from '../lib/supabase';
 
@@ -25,9 +26,7 @@ export default function Login() {
     <div className="flex min-h-dvh items-center justify-center p-5">
       <div className="w-full max-w-sm">
         <div className="mb-8">
-          <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-brand text-brand-ink">
-            <svg viewBox="0 0 64 64" className="size-8" aria-hidden><path d="M14 44h36M20 32h24M26 20h12" stroke="currentColor" strokeWidth="6" strokeLinecap="round" /></svg>
-          </div>
+          <Logo className="mb-5 size-16 drop-shadow-lg" />
           <h1 className="text-3xl font-bold">مصاريف البيت</h1>
           <p className="mt-2 text-muted">سجّلوا مصاريف العائلة في ثوانٍ، واعرفوا أين يذهب كل ريال.</p>
         </div>

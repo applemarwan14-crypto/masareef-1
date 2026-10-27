@@ -1,15 +1,17 @@
 import { useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Drawer } from 'vaul';
-import { ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react';
+import { animate } from 'motion';
+import { CaretDown, CaretLeft, CaretRight, CircleNotch, type Icon } from '@phosphor-icons/react';
 import { addMonths, formatMonth, monthOf, todayISO } from '../lib/dates';
 import { iconFor } from '../lib/icons';
+import { formatSAR } from '../lib/money';
 import type { Category, MonthKey } from '../lib/types';
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 const variants: Record<Variant, string> = {
-  primary: 'bg-brand text-brand-ink hover:opacity-90',
+  primary: 'bg-brand text-brand-ink shadow-sm shadow-brand/20 hover:opacity-90',
   secondary: 'bg-surface-2 text-ink hover:bg-line',
   ghost: 'text-ink hover:bg-surface-2',
   danger: 'bg-danger-soft text-danger hover:opacity-90',
@@ -23,11 +25,11 @@ export function Button({
       {...rest}
       disabled={disabled || loading}
       className={cx(
-        'inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 font-semibold transition active:scale-[.98] disabled:opacity-50',
+        'inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 font-semibold transition active:scale-[.97] disabled:opacity-50',
         variants[variant], className,
       )}
     >
-      {loading && <LoaderCircle className="size-4 animate-spin" />}
+      {loading && <CircleNotch className="size-4 animate-spin" weight="bold" />}
       {children}
     </button>
   );
@@ -39,14 +41,14 @@ export function IconButton({ label, className, children, ...rest }: ButtonHTMLAt
       {...rest}
       aria-label={label}
       title={label}
-      className={cx('inline-flex size-10 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink', className)}
+      className={cx('inline-flex size-10 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-ink active:scale-95', className)}
     >
       {children}
     </button>
   );
 }
 
-/** زر حذف يحتاج ضغطتين، أسرع من نافذة تأكيد وأأمن من الحذف المباشر */
+/** زر حذف يحتاج ضغطتين: أسرع من نافذة تأكيد وأأمن من الحذف المباشر */
 export function ConfirmButton({ onConfirm, children, confirmText = 'اضغط مرة أخرى للتأكيد', loading, className }: {
   onConfirm: () => void; children: ReactNode; confirmText?: string; loading?: boolean; className?: string;
 }) {
@@ -64,15 +66,35 @@ export function ConfirmButton({ onConfirm, children, confirmText = 'اضغط م�
   );
 }
 
+// كل الحقول 16px على الأقل حتى لا يكبّر الآيفون الشاشة عند الكتابة
+const fieldClass = 'h-12 w-full rounded-2xl border border-line bg-surface px-4 text-base outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10';
+
 export function Field({ label, hint, className, ...rest }: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string }) {
   return (
     <label className={cx('block', className)}>
       <span className="mb-1.5 block text-sm font-medium text-muted">{label}</span>
-      <input
-        {...rest}
-        className="h-12 w-full rounded-2xl border border-line bg-surface px-4 text-base outline-none transition focus:border-brand"
-      />
+      <input {...rest} className={fieldClass} />
       {hint && <span className="mt-1 block text-xs text-muted">{hint}</span>}
+    </label>
+  );
+}
+
+/** قائمة اختيار أصلية (أفضل تجربة على الجوال) مع سهم واضح */
+export function Select<T extends string>({ label, value, onChange, options, showLabel, icon: LeadIcon }: {
+  label: string; value: T; onChange: (v: T) => void; options: { value: T; label: string; disabled?: boolean }[];
+  showLabel?: boolean; icon?: Icon;
+}) {
+  return (
+    <label className="block">
+      <span className={showLabel ? 'mb-1.5 block text-sm font-medium text-muted' : 'sr-only'}>{label}</span>
+      <span className="relative block">
+        {LeadIcon && <LeadIcon className="pointer-events-none absolute start-3.5 top-1/2 size-5 -translate-y-1/2 text-muted" />}
+        <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value as T)}
+          className={cx(fieldClass, 'appearance-none pe-10', LeadIcon && 'ps-11')}>
+          {options.map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
+        </select>
+        <CaretDown className="pointer-events-none absolute end-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" weight="bold" />
+      </span>
     </label>
   );
 }
@@ -80,7 +102,7 @@ export function Field({ label, hint, className, ...rest }: InputHTMLAttributes<H
 export function Spinner({ full }: { full?: boolean }) {
   return (
     <div className={cx('flex items-center justify-center text-brand', full ? 'min-h-dvh' : 'py-20')}>
-      <LoaderCircle className="size-7 animate-spin" aria-label="جارٍ التحميل" />
+      <CircleNotch className="size-8 animate-spin" weight="bold" aria-label="جارٍ التحميل" />
     </div>
   );
 }
@@ -96,23 +118,29 @@ export function FullScreenMessage({ title, children }: { title: string; children
   );
 }
 
-export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
+export function EmptyState({ icon: EmptyIcon, title, children }: { icon?: Icon; title: string; children?: ReactNode }) {
   return (
-    <div className="rounded-card border border-dashed border-line px-6 py-10 text-center">
-      <p className="font-semibold">{title}</p>
-      {children && <div className="mt-1 text-sm text-muted">{children}</div>}
+    <div className="flex flex-col items-center rounded-card bg-surface px-6 py-10 text-center">
+      {EmptyIcon && (
+        <span className="mb-4 flex size-16 items-center justify-center rounded-3xl bg-brand-soft text-brand">
+          <EmptyIcon className="size-8" weight="duotone" />
+        </span>
+      )}
+      <p className="font-bold">{title}</p>
+      {children && <div className="mt-1.5 max-w-xs text-sm leading-relaxed text-muted">{children}</div>}
     </div>
   );
 }
 
 export function CategoryIcon({ category, size = 'md' }: { category?: Category; size?: 'sm' | 'md' | 'lg' }) {
-  const Icon = iconFor(category?.icon ?? 'circle');
+  const Glyph = iconFor(category?.icon ?? 'circle');
   const color = category?.color ?? '#64748B';
-  const dims = { sm: 'size-8 rounded-xl', md: 'size-10 rounded-2xl', lg: 'size-12 rounded-2xl' }[size];
+  const dims = { sm: 'size-9 rounded-xl', md: 'size-11 rounded-2xl', lg: 'size-14 rounded-2xl' }[size];
+  const glyph = { sm: 'size-5', md: 'size-6', lg: 'size-7' }[size];
   return (
     <span className={cx('inline-flex shrink-0 items-center justify-center', dims)}
-      style={{ backgroundColor: `${color}1F`, color }}>
-      <Icon className={size === 'sm' ? 'size-4' : 'size-5'} strokeWidth={2} />
+      style={{ backgroundColor: `${color}1A`, color }}>
+      <Glyph className={glyph} weight="duotone" />
     </span>
   );
 }
@@ -121,28 +149,31 @@ export function MonthSwitcher({ month, onChange }: { month: MonthKey; onChange: 
   const current = monthOf(todayISO());
   const isCurrent = month >= current;
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5 rounded-full bg-surface p-1 shadow-sm">
       {/* في الاتجاه RTL: السهم الأيمن = الشهر السابق */}
-      <IconButton label="الشهر السابق" onClick={() => onChange(addMonths(month, -1))}><ChevronRight className="size-5" /></IconButton>
+      <IconButton label="الشهر السابق" className="size-8" onClick={() => onChange(addMonths(month, -1))}>
+        <CaretRight className="size-4" weight="bold" />
+      </IconButton>
       <button type="button" onClick={() => onChange(current)}
-        className="min-w-32 rounded-full px-3 py-1.5 text-center font-semibold hover:bg-surface-2"
-        title="العودة للشهر الحالي">
+        className="min-w-28 rounded-full px-2 text-center text-sm font-semibold" title="العودة للشهر الحالي">
         {formatMonth(month)}
       </button>
-      <IconButton label="الشهر التالي" disabled={isCurrent} className="disabled:opacity-30"
-        onClick={() => onChange(addMonths(month, 1))}><ChevronLeft className="size-5" /></IconButton>
+      <IconButton label="الشهر التالي" disabled={isCurrent} className="size-8 disabled:opacity-25"
+        onClick={() => onChange(addMonths(month, 1))}>
+        <CaretLeft className="size-4" weight="bold" />
+      </IconButton>
     </div>
   );
 }
 
-/** لوحة سفلية على الجوال، ونافذة وسطية على الكمبيوتر */
+/** لوحة سفلية على الجوال، ونافذة بعرض محدود على الكمبيوتر */
 export function Sheet({ open, onOpenChange, title, children }: {
   open: boolean; onOpenChange: (o: boolean) => void; title: string; children: ReactNode;
 }) {
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} repositionInputs={false}>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-40 bg-black/40" />
+        <Drawer.Overlay className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]" />
         <Drawer.Content
           dir="rtl"
           className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[94dvh] w-full max-w-lg flex-col rounded-t-[28px] bg-surface outline-none md:bottom-6 md:rounded-[28px]"
@@ -158,19 +189,27 @@ export function Sheet({ open, onOpenChange, title, children }: {
 }
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <section className={cx('rounded-card bg-surface p-5', className)}>{children}</section>;
+  return <section className={cx('rounded-card bg-surface p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04)]', className)}>{children}</section>;
 }
 
-export function Select<T extends string>({ label, value, onChange, options }: {
-  label: string; value: T; onChange: (v: T) => void; options: { value: T; label: string }[];
-}) {
+export function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
-    <label className="block">
-      <span className="sr-only">{label}</span>
-      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value as T)}
-        className="h-11 w-full appearance-none rounded-2xl border border-line bg-surface px-4 text-sm outline-none focus:border-brand">
-        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-    </label>
+    <div className="mb-3 flex items-center justify-between">
+      <h2 className="font-bold">{children}</h2>
+      {action}
+    </div>
   );
+}
+
+/** مبلغ يتحرك عدّاً عند تغيّره */
+export function AnimatedAmount({ value, className }: { value: number; className?: string }) {
+  const [shown, setShown] = useState(value);
+  useEffect(() => {
+    const controls = animate(shown, value, {
+      duration: 0.6, ease: [0.22, 1, 0.36, 1], onUpdate: (v) => setShown(Math.round(v)),
+    });
+    return () => controls.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return <span className={cx('num', className)}>{formatSAR(shown)}</span>;
 }

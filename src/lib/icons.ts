@@ -1,36 +1,45 @@
 import {
-  Baby, Bike, BookOpen, Car, CircleDashed, Coffee, Dumbbell, Fuel, Gift, GraduationCap, HeartPulse, House,
-  Plane, Receipt, Shirt, ShoppingBag, ShoppingCart, Smartphone, Sparkles, UserRound, UtensilsCrossed, Wifi, Wrench,
-  type LucideIcon,
-} from 'lucide-react';
+  AirplaneTilt, Baby, Barbell, BookOpen, Broom, Car, Coffee, DeviceMobile, DotsThreeCircle, Drop, ForkKnife,
+  GasPump, Gift, GraduationCap, HandCoins, Heartbeat, House, Lightning, PawPrint, Pill, Receipt, Scooter,
+  ShoppingBag, ShoppingCart, Sparkle, SteeringWheel, TShirt, Television, WifiHigh, Wrench,
+  type Icon,
+} from '@phosphor-icons/react';
 
-export const CATEGORY_ICONS: Record<string, LucideIcon> = {
+/** مفاتيح الأيقونات المخزنة في قاعدة البيانات → الأيقونة */
+export const CATEGORY_ICONS: Record<string, Icon> = {
   cart: ShoppingCart,
+  food: ForkKnife,
   coffee: Coffee,
-  food: UtensilsCrossed,
-  bike: Bike,
+  bike: Scooter,
   receipt: Receipt,
   bag: ShoppingBag,
   car: Car,
-  fuel: Fuel,
+  fuel: GasPump,
+  broom: Broom,
+  steering: SteeringWheel,
   home: House,
-  steering: UserRound,
-  wifi: Wifi,
-  phone: Smartphone,
-  health: HeartPulse,
+  power: Lightning,
+  water: Drop,
+  wifi: WifiHigh,
+  phone: DeviceMobile,
+  tv: Television,
+  health: Heartbeat,
+  pill: Pill,
   school: GraduationCap,
+  books: BookOpen,
   baby: Baby,
   gift: Gift,
-  clothes: Shirt,
-  travel: Plane,
-  sport: Dumbbell,
-  books: BookOpen,
+  clothes: TShirt,
+  beauty: Sparkle,
+  travel: AirplaneTilt,
+  sport: Barbell,
+  pet: PawPrint,
   repair: Wrench,
-  beauty: Sparkles,
-  circle: CircleDashed,
+  charity: HandCoins,
+  circle: DotsThreeCircle,
 };
 
-export const iconFor = (key: string): LucideIcon => CATEGORY_ICONS[key] ?? CircleDashed;
+export const iconFor = (key: string): Icon => CATEGORY_ICONS[key] ?? DotsThreeCircle;
 
 export const CATEGORY_COLORS = [
   '#0E6B58', '#2563EB', '#7C3AED', '#DB2777', '#C2410C', '#B45309',

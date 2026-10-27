@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
-import { Copy, LogOut, Plus, RefreshCw } from 'lucide-react';
+import { ArrowsClockwise, Copy, SignOut, Plus, Tag, Target, UsersThree } from '@phosphor-icons/react';
 import { Button, Card, CategoryIcon, ConfirmButton, Field, IconButton, Sheet, cx } from '../components/ui';
 import { useHousehold } from '../hooks/household';
 import { useCategories, useDeleteCategory, useInvalidate, useSaveCategory, useUpdateHousehold } from '../hooks/queries';
@@ -18,7 +18,7 @@ export default function Settings() {
       <FamilySection />
       <CategoriesSection />
       <Button variant="ghost" className="w-full text-danger" onClick={() => supabase.auth.signOut()}>
-        <LogOut className="size-5" /> تسجيل الخروج
+        <SignOut className="size-5" weight="bold" /> تسجيل الخروج
       </Button>
     </div>
   );
@@ -39,7 +39,7 @@ function BudgetSection() {
 
   return (
     <Card>
-      <h2 className="font-bold">الميزانية الشهرية</h2>
+      <h2 className="inline-flex items-center gap-2 font-bold"><Target className="size-5 text-brand" weight="duotone" />الميزانية الشهرية</h2>
       <p className="mt-1 text-sm text-muted">
         {household.monthly_budget ? `الحالية: ${formatSAR(household.monthly_budget)}` : 'لم تُحدَّد بعد. اتركها فارغة لإلغائها.'}
       </p>
@@ -80,7 +80,7 @@ function FamilySection() {
 
   return (
     <Card className="space-y-4">
-      <h2 className="font-bold">العائلة</h2>
+      <h2 className="inline-flex items-center gap-2 font-bold"><UsersThree className="size-5 text-brand" weight="duotone" />العائلة</h2>
       <form className="space-y-3" onSubmit={(e) => {
         e.preventDefault();
         if (!name.trim() || !familyName.trim()) return toast.error('الأسماء لا يمكن أن تكون فارغة');
@@ -111,10 +111,10 @@ function FamilySection() {
           <code dir="ltr" className="flex-1 rounded-xl bg-surface-2 py-2.5 text-center text-xl font-bold tracking-[.3em]">
             {household.invite_code}
           </code>
-          <IconButton label="نسخ الرمز" onClick={copyCode}><Copy className="size-5" /></IconButton>
+          <IconButton label="نسخ الرمز" onClick={copyCode}><Copy className="size-5" weight="bold" /></IconButton>
           {me.role === 'owner' && (
             <IconButton label="إنشاء رمز جديد" onClick={rotate} disabled={rotating}>
-              <RefreshCw className={cx('size-5', rotating && 'animate-spin')} />
+              <ArrowsClockwise className={cx('size-5', rotating && 'animate-spin')} weight="bold" />
             </IconButton>
           )}
         </div>
@@ -130,9 +130,9 @@ function CategoriesSection() {
   return (
     <Card className="p-3">
       <div className="flex items-center justify-between px-2 pt-2">
-        <h2 className="font-bold">التصنيفات</h2>
+        <h2 className="inline-flex items-center gap-2 font-bold"><Tag className="size-5 text-brand" weight="duotone" />التصنيفات</h2>
         <Button variant="ghost" className="h-9 px-3 text-sm" onClick={() => setEditing({ open: true })}>
-          <Plus className="size-4" /> تصنيف جديد
+          <Plus className="size-4" weight="bold" /> تصنيف جديد
         </Button>
       </div>
       <ul className="mt-2">
@@ -182,11 +182,12 @@ function CategoryForm({ item, nextOrder, onDone }: { item?: Category; nextOrder:
       </div>
       <fieldset>
         <legend className="mb-2 text-sm font-medium text-muted">الأيقونة</legend>
-        <div className="grid grid-cols-8 gap-1.5">
+        <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8">
           {Object.entries(CATEGORY_ICONS).map(([key, Icon]) => (
             <button key={key} type="button" aria-label={key} aria-pressed={icon === key} onClick={() => setIcon(key)}
-              className={cx('flex aspect-square items-center justify-center rounded-xl', icon === key ? 'bg-ink text-bg' : 'bg-surface-2 text-muted')}>
-              <Icon className="size-4" />
+              className={cx('flex aspect-square items-center justify-center rounded-xl transition active:scale-90', icon === key ? 'text-white' : 'bg-surface-2 text-muted')}
+              style={icon === key ? { background: color } : undefined}>
+              <Icon className="size-5" weight="duotone" />
             </button>
           ))}
         </div>

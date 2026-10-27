@@ -16,8 +16,9 @@
   --color-warn-soft: #FBEFD5;
   --color-danger: #C0392B;
   --color-danger-soft: #F8DEDA;
+  --color-gold: #E2A93B;
 
-  --radius-card: 1.25rem;
+  --radius-card: 1.5rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -47,6 +48,19 @@ body {
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
 }
+
+/* بطاقة الملخص الرئيسية */
+.hero {
+  background: radial-gradient(120% 140% at 100% 0%, #18927A 0%, #0E6B58 45%, #0A4A3D 100%);
+  color: #fff;
+}
+
+/* إخفاء شريط التمرير الأفقي في قوائم التصنيفات */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* منع تحديد النص بالضغط المطول داخل التطبيق */
+button, nav { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
 /* الأرقام بعرض ثابت لتصطف المبالغ */
 .num { font-variant-numeric: tabular-nums; }

@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
-import { Camera, FileCheck2, ExternalLink, Trash2 } from 'lucide-react';
+import { ArrowSquareOut, Camera, CheckCircle, Trash } from '@phosphor-icons/react';
 import { useCategories, useDeleteExpense, useSaveExpense } from '../hooks/queries';
 import { useMemberName } from '../hooks/household';
 import { receiptUrl } from '../lib/api';
@@ -98,8 +98,8 @@ function ExpenseForm({ expense, onDone }: { expense?: Expense; onDone: () => voi
           {visible.map((c) => (
             <button key={c.id} type="button" onClick={() => setCategoryId(c.id)} aria-pressed={categoryId === c.id}
               className={cx(
-                'flex flex-col items-center gap-1.5 rounded-2xl border-2 px-1 py-2.5 text-center text-xs font-medium leading-tight transition',
-                categoryId === c.id ? 'border-brand bg-brand-soft' : 'border-transparent bg-surface-2 hover:border-line',
+                'flex flex-col items-center gap-1.5 rounded-2xl border-2 px-1 py-2.5 text-center text-xs font-semibold leading-tight transition active:scale-95',
+                categoryId === c.id ? 'border-brand bg-brand-soft text-brand' : 'border-transparent bg-surface-2 hover:border-line',
               )}>
               <CategoryIcon category={c} size="sm" />
               <span className="line-clamp-2">{c.name}</span>
@@ -111,14 +111,14 @@ function ExpenseForm({ expense, onDone }: { expense?: Expense; onDone: () => voi
       <div className="flex flex-wrap items-center gap-2">
         {dateChips.map((d) => (
           <button key={d} type="button" onClick={() => setDate(d)}
-            className={cx('h-10 rounded-full px-4 text-sm font-medium', date === d ? 'bg-ink text-bg' : 'bg-surface-2')}>
+            className={cx('h-10 rounded-full px-4 text-sm font-semibold transition', date === d ? 'bg-ink text-bg' : 'bg-surface-2')}>
             {formatDayLabel(d, today)}
           </button>
         ))}
         <label className="relative">
           <span className="sr-only">تاريخ آخر</span>
           <input type="date" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)}
-            className={cx('h-10 rounded-full px-4 text-sm', !dateChips.includes(date) ? 'bg-ink text-bg' : 'bg-surface-2')} />
+            className={cx('h-10 rounded-full px-4 text-base', !dateChips.includes(date) ? 'bg-ink text-bg' : 'bg-surface-2')} />
         </label>
       </div>
 
@@ -128,12 +128,12 @@ function ExpenseForm({ expense, onDone }: { expense?: Expense; onDone: () => voi
           onChange={(e) => setDescription(e.target.value)}
           maxLength={200}
           placeholder="وصف (اختياري): الدانوب، فاتورة الكهرباء…"
-          className="h-12 min-w-0 flex-1 rounded-2xl border border-line bg-surface px-4 outline-none focus:border-brand"
+          className="h-12 min-w-0 flex-1 rounded-2xl border border-line bg-surface px-4 text-base outline-none focus:border-brand focus:ring-4 focus:ring-brand/10"
         />
         <button type="button" onClick={() => fileRef.current?.click()}
           aria-label={receipt ? 'تم إرفاق الفاتورة' : 'إرفاق صورة الفاتورة'}
           className={cx('flex size-12 shrink-0 items-center justify-center rounded-2xl', receipt ? 'bg-brand-soft text-brand' : 'bg-surface-2 text-muted')}>
-          {receipt ? <FileCheck2 className="size-5" /> : <Camera className="size-5" />}
+          {receipt ? <CheckCircle className="size-6" weight="fill" /> : <Camera className="size-6" weight="duotone" />}
         </button>
         <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden"
           onChange={(e) => setReceipt(e.target.files?.[0] ?? null)} />
@@ -144,7 +144,7 @@ function ExpenseForm({ expense, onDone }: { expense?: Expense; onDone: () => voi
           <span>أضافه {memberName(expense.created_by)}</span>
           {expense.receipt_path && (
             <button type="button" onClick={openReceipt} className="inline-flex items-center gap-1 font-medium text-brand">
-              <ExternalLink className="size-4" /> عرض الفاتورة
+              <ArrowSquareOut className="size-4" weight="bold" /> عرض الفاتورة
             </button>
           )}
         </div>
@@ -157,7 +157,7 @@ function ExpenseForm({ expense, onDone }: { expense?: Expense; onDone: () => voi
         {expense && (
           <ConfirmButton loading={remove.isPending} confirmText="تأكيد الحذف"
             onConfirm={() => remove.mutate(expense, { onSuccess: onDone })}>
-            <Trash2 className="size-5" /><span className="sr-only">حذف</span>
+            <Trash className="size-5" weight="bold" /><span className="sr-only">حذف</span>
           </ConfirmButton>
         )}
       </div>

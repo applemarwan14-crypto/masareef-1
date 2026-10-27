@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button, Field, cx } from '../components/ui';
+import { Logo } from '../components/Logo';
 import { createHousehold, joinHousehold } from '../lib/api';
 import { supabase } from '../lib/supabase';
 
@@ -31,6 +32,7 @@ export default function Onboarding() {
   return (
     <div className="flex min-h-dvh items-center justify-center p-5">
       <div className="w-full max-w-sm">
+        <Logo className="mb-5 size-14" />
         <h1 className="text-2xl font-bold">لنجهّز حسابكم</h1>
         <p className="mt-2 text-muted">أحدكما ينشئ العائلة، والآخر ينضم برمز الدعوة من صفحة الإعدادات.</p>
 
