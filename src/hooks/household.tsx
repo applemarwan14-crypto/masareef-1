@@ -18,3 +18,8 @@ export function useMemberName() {
   const { members } = useHousehold();
   return (userId: string) => members.find((m) => m.user_id === userId)?.display_name ?? '—';
 }
+
+/** هل المستخدم الحالي منشئ العائلة (يدير التصنيفات والميزانية والبطاقات والأعضاء) */
+export function useIsOwner() {
+  return useHousehold().me.role === 'owner';
+}

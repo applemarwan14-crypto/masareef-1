@@ -1,15 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { budgetStatus, byCategory, changeRatio, filterExpenses, groupByDay, monthlySeries } from './stats';
 import { recurringForMonth } from './recurring';
-import type { Category, Expense, Recurring } from './types';
+import { makeCategory, makeExpense } from './fixtures';
+import type { Recurring } from './types';
 
-const cat = (id: string, name: string): Category => ({
-  id, household_id: 'h', name, icon: 'circle', color: '#000000', sort_order: 0, is_archived: false,
-});
-const exp = (id: string, category_id: string, amount: number, expense_date: string, extra: Partial<Expense> = {}): Expense => ({
-  id, household_id: 'h', category_id, amount, expense_date, description: null, receipt_path: null,
-  recurring_id: null, recurring_period: null, created_by: 'u1', created_at: '', updated_at: '', ...extra,
-});
+const cat = (id: string, name: string) => makeCategory(id, name);
+const exp = makeExpense;
 
 const cats = [cat('a', 'بقالة'), cat('b', 'مطاعم')];
 const list = [

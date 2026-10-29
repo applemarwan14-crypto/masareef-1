@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { CalendarDots, FilePdf, FileXls, FunnelSimple, MagnifyingGlass, Receipt, Tag, User, X } from '@phosphor-icons/react';
+import { AirplaneTilt, CalendarDots, FilePdf, FileXls, FunnelSimple, MagnifyingGlass, Receipt, Tag, User, X } from '@phosphor-icons/react';
 import { ExpenseGroups } from '../components/ExpenseList';
 import { Button, EmptyState, IconButton, MonthSwitcher, Select, Spinner } from '../components/ui';
 import { useHousehold } from '../hooks/household';
-import { useCategories, useExpenses } from '../hooks/queries';
+import { useCategories, useExpenses, useTrips } from '../hooks/queries';
 import { exportExcel, printReport } from '../lib/export';
 import { formatDayShort, formatMonth, monthEnd, monthOf, todayISO } from '../lib/dates';
 import { formatSAR, sumHalalas } from '../lib/money';
@@ -22,6 +22,9 @@ export default function Expenses() {
   const [query, setQuery] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [memberId, setMemberId] = useState('');
+  const [scope, setScope] = useState<'all' | 'monthly' | 'trips'>('all');
+  const { data: trips = [] } = useTrips();
+  const tripNames = useMemo(() => new Map(trips.map((t) => [t.id, t.name])), [trips]);
   const [exporting, setExporting] = useState(false);
 
   const from = custom ? range.from : month;
@@ -29,12 +32,12 @@ export default function Expenses() {
   const { data = [], isPending } = useExpenses(from, to);
 
   const filtered = useMemo(
-    () => filterExpenses(data, { query, categoryId: categoryId || null, memberId: memberId || null }, categories),
-    [data, query, categoryId, memberId, categories],
+    () => filterExpenses(data, { query, categoryId: categoryId || null, memberId: memberId || null, scope }, categories),
+    [data, query, categoryId, memberId, scope, categories],
   );
   const total = sumHalalas(filtered.map((e) => e.amount));
   const periodLabel = custom ? `${formatDayShort(from)} – ${formatDayShort(to)}` : formatMonth(month);
-  const hasFilters = Boolean(query || categoryId || memberId);
+  const hasFilters = Boolean(query || categoryId || memberId || scope !== 'all');
 
   const report = () => ({ title: `مصاريف ${household.name}`, periodLabel, expenses: filtered, categories, members });
 
@@ -86,11 +89,15 @@ export default function Expenses() {
           className="h-12 w-full rounded-2xl border border-line bg-surface ps-11 pe-4 text-base outline-none focus:border-brand focus:ring-4 focus:ring-brand/10" />
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Select label="التصنيف" icon={Tag} value={categoryId} onChange={setCategoryId}
           options={[{ value: '', label: 'كل التصنيفات' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} />
         <Select label="الشخص" icon={User} value={memberId} onChange={setMemberId}
           options={[{ value: '', label: 'الجميع' }, ...members.map((m) => ({ value: m.user_id, label: m.display_name }))]} />
+        {trips.length > 0 && (
+          <Select label="النوع" icon={AirplaneTilt} value={scope} onChange={setScope}
+            options={[{ value: 'all', label: 'كل العمليات' }, { value: 'monthly', label: 'مصروف الشهر' }, { value: 'trips', label: 'الرحلات' }]} />
+        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-card bg-surface px-5 py-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
@@ -101,7 +108,7 @@ export default function Expenses() {
         <div className="flex gap-2">
           {hasFilters && (
             <Button variant="ghost" className="h-10 px-3 text-sm"
-              onClick={() => { setQuery(''); setCategoryId(''); setMemberId(''); }}>
+              onClick={() => { setQuery(''); setCategoryId(''); setMemberId(''); setScope('all'); }}>
               <X className="size-4" weight="bold" /> مسح
             </Button>
           )}
@@ -118,7 +125,7 @@ export default function Expenses() {
         ? <EmptyState icon={hasFilters ? FunnelSimple : Receipt} title={hasFilters ? 'لا توجد نتائج مطابقة' : 'لا توجد عمليات في هذه الفترة'}>
             {hasFilters ? 'جرّب تغيير كلمات البحث أو التصفية' : 'اضغط زر + لإضافة مصروف'}
           </EmptyState>
-        : <ExpenseGroups expenses={filtered} categories={categories} />}
+        : <ExpenseGroups expenses={filtered} categories={categories} tripNames={tripNames} />}
     </div>
   );
 }

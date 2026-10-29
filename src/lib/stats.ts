@@ -87,6 +87,8 @@ export interface ExpenseFilter {
   query?: string;
   categoryId?: string | null;
   memberId?: string | null;
+  /** monthly: بدون الرحلات، trips: الرحلات فقط */
+  scope?: 'all' | 'monthly' | 'trips';
 }
 
 export function filterExpenses(
@@ -99,10 +101,37 @@ export function filterExpenses(
   return expenses.filter((e) => {
     if (filter.categoryId && e.category_id !== filter.categoryId) return false;
     if (filter.memberId && e.created_by !== filter.memberId) return false;
+    if (filter.scope === 'monthly' && e.trip_id) return false;
+    if (filter.scope === 'trips' && !e.trip_id) return false;
     if (q) {
-      const hay = `${e.description ?? ''} ${catName.get(e.category_id) ?? ''} ${e.amount / 100}`.toLowerCase();
+      const hay = `${e.merchant ?? ''} ${e.description ?? ''} ${catName.get(e.category_id) ?? ''} ${e.amount / 100}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
   });
+}
+
+export interface YearComparison {
+  months: { month: number; current: Halalas; previous: Halalas }[];
+  current: Halalas;
+  previous: Halalas;
+  change: number | null;
+}
+
+/**
+ * مقارنة سنوية عادلة: نفس الأشهر من السنتين فقط (يناير حتى `uptoMonth`).
+ * مثلاً في أكتوبر تُقارن يناير–أكتوبر هذه السنة بيناير–أكتوبر السنة الماضية، لا بالسنة الماضية كاملة.
+ */
+export function yearComparison(rows: readonly MonthlyTotal[], year: number, uptoMonth: number): YearComparison {
+  const totals = new Map<string, number>();
+  for (const r of rows) totals.set(r.month, (totals.get(r.month) ?? 0) + r.total);
+  const key = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')}-01`;
+  const months = Array.from({ length: uptoMonth }, (_, i) => ({
+    month: i + 1,
+    current: totals.get(key(year, i + 1)) ?? 0,
+    previous: totals.get(key(year - 1, i + 1)) ?? 0,
+  }));
+  const current = sumHalalas(months.map((m) => m.current));
+  const previous = sumHalalas(months.map((m) => m.previous));
+  return { months, current, previous, change: changeRatio(current, previous) };
 }

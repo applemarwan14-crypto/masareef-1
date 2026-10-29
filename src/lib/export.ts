@@ -1,7 +1,8 @@
 import { formatDayShort } from './dates';
 import { formatSAR, sumHalalas, toRiyals } from './money';
 import { byCategory } from './stats';
-import type { Category, Expense, Member } from './types';
+import { CARD_TYPES } from './labels';
+import type { Card, Category, Expense, Member, Trip } from './types';
 
 export interface ReportInput {
   title: string;
@@ -9,19 +10,26 @@ export interface ReportInput {
   expenses: Expense[];
   categories: Category[];
   members: Member[];
+  trips?: Trip[];
+  cards?: Card[];
 }
 
-function rows({ expenses, categories, members }: ReportInput) {
+function rows({ expenses, categories, members, trips = [], cards = [] }: ReportInput) {
   const cat = new Map(categories.map((c) => [c.id, c.name]));
   const who = new Map(members.map((m) => [m.user_id, m.display_name]));
+  const trip = new Map(trips.map((t) => [t.id, t.name]));
+  const card = new Map(cards.map((c) => [c.id, c.nickname || `${c.bank || CARD_TYPES[c.card_type]} ••${c.last4}`]));
   return [...expenses]
     .sort((a, b) => a.expense_date.localeCompare(b.expense_date) || a.created_at.localeCompare(b.created_at))
     .map((e) => ({
       date: e.expense_date,
       category: cat.get(e.category_id) ?? '—',
-      description: e.description ?? '',
+      description: [e.merchant, e.description].filter(Boolean).join(' — '),
       amount: e.amount,
       by: who.get(e.created_by) ?? '—',
+      original: e.original_currency ? `${(e.original_amount ?? 0) / 100} ${e.original_currency}` : '',
+      trip: e.trip_id ? trip.get(e.trip_id) ?? 'رحلة' : '',
+      card: e.card_id ? card.get(e.card_id) ?? '' : '',
     }));
 }
 
@@ -48,6 +56,9 @@ export async function exportExcel(input: ReportInput, filename: string) {
     { header: 'الوصف', key: 'description', width: 34 },
     { header: 'المبلغ', key: 'amount', width: 16, style: { numFmt: money } },
     { header: 'أضافه', key: 'by', width: 14 },
+    { header: 'العملة الأصلية', key: 'original', width: 16 },
+    { header: 'الرحلة', key: 'trip', width: 18 },
+    { header: 'البطاقة', key: 'card', width: 18 },
   ];
   const data = rows(input);
   data.forEach((r) => ws.addRow({ ...r, date: new Date(`${r.date}T00:00:00Z`), amount: toRiyals(r.amount) }));
