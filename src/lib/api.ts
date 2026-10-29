@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import type {
   AppNotification, Card, Category, CategorySnapshot, Expense, Household, InsightNotes, ISODate, Member, MonthKey,
-  MonthlyTotal, OrganizePlan, Recurring, Renewal, SmsMessage, Trip, YearRow,
+  MonthlyTotal, OrganizePlan, Recurring, Renewal, SmsMessage, StatementImport, StatementRow, Trip, YearRow,
 } from './types';
 
 /** يرمي خطأ مقروءاً بالعربية عند فشل الطلب */
@@ -306,3 +306,19 @@ export async function archiveYear(year: number) {
   for (let i = 0; i < paths.length; i += 100) await supabase.storage.from('receipts').remove(paths.slice(i, i + 100));
   return paths.length;
 }
+
+// ---------- كشوفات البنك (قسم منفصل عن المصاريف) ----------
+export const fetchStatements = async (householdId: string) =>
+  check(
+    await supabase.from('statement_imports').select('id,name,bank,period_from,period_to,notes,created_at')
+      .eq('household_id', householdId).order('created_at', { ascending: false }),
+  ) as StatementImport[];
+export const fetchStatementRows = async (importId: string) =>
+  check(
+    await supabase.from('statement_rows')
+      .select('id,import_id,txn_date,direction,amount,kind,description,merchant,category_id,matched_expense_id')
+      .eq('import_id', importId).order('txn_date', { ascending: false }).order('sort_order').limit(5000),
+  ) as StatementRow[];
+export const setStatementRowCategory = async (id: string, categoryId: string | null) =>
+  check(await supabase.from('statement_rows').update({ category_id: categoryId }).eq('id', id));
+export const deleteStatement = async (id: string) => check(await supabase.from('statement_imports').delete().eq('id', id));

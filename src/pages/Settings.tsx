@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
 import { toast } from 'sonner';
 import {
-  ArrowCounterClockwise, ArrowsClockwise, Bell, ChatCircleText, Copy, Crown, MagicWand, PushPin, SignOut, Plus, Tag, Target,
+  ArrowCounterClockwise, ArrowsClockwise, Bell, CaretLeft, FileText, ChatCircleText, Copy, Crown, MagicWand, PushPin, SignOut, Plus, Tag, Target,
   UserMinus, UsersThree,
 } from '@phosphor-icons/react';
 import { Button, Card, CategoryIcon, ConfirmButton, Field, IconButton, Sheet, cx } from '../components/ui';
@@ -30,6 +31,14 @@ export default function Settings() {
       <SmsSection />
       <FamilySection />
       <CategoriesSection />
+      <Link to="/statements" className="flex items-center gap-3 rounded-card bg-surface p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04)] active:opacity-80">
+        <FileText className="size-5 text-brand" weight="duotone" />
+        <span className="flex-1">
+          <span className="block font-bold">كشوفات البنك</span>
+          <span className="text-xs text-muted">الكشوفات المرفوعة، منفصلة عن مصاريفك</span>
+        </span>
+        <CaretLeft className="size-4 text-muted" weight="bold" />
+      </Link>
       <Button variant="ghost" className="w-full text-danger" onClick={() => supabase.auth.signOut()}>
         <SignOut className="size-5" weight="bold" /> تسجيل الخروج
       </Button>
