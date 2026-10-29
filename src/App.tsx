@@ -24,6 +24,7 @@ const Cards = lazy(() => import('./pages/Cards'));
 const SmsLog = lazy(() => import('./pages/SmsLog'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const More = lazy(() => import('./pages/More'));
+const Statements = lazy(() => import('./pages/Statements'));
 
 export default function App() {
   const { session, loading } = useAuth();
@@ -67,6 +68,8 @@ export default function App() {
             <Route path="sms" element={<SmsLog />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="more" element={<More />} />
+            <Route path="statements" element={<Statements />} />
+            <Route path="statements/:id" element={<Statements />} />
             <Route path="*" element={<Dashboard />} />
           </Routes>
         </Suspense>

@@ -21,6 +21,8 @@ export const keys = {
   sms: (u: string) => ['sms', u] as const,
   snapshots: (h: string) => ['snapshots', h] as const,
   years: (h: string) => ['years', h] as const,
+  statements: (h: string) => ['statements', h] as const,
+  statementRows: (i: string) => ['statement-rows', i] as const,
 };
 
 /** كل ما يتأثر بتغيير في المصروفات */
@@ -291,4 +293,18 @@ export function useSnapshots() {
 export function useYearOverview() {
   const { household } = useHousehold();
   return useQuery({ queryKey: keys.years(household.id), queryFn: api.fetchYearOverview });
+}
+
+// ---------- كشوفات البنك ----------
+export function useStatements() {
+  const { household } = useHousehold();
+  return useQuery({ queryKey: keys.statements(household.id), queryFn: () => api.fetchStatements(household.id) });
+}
+
+export function useStatementRows(importId: string | undefined) {
+  return useQuery({
+    queryKey: keys.statementRows(importId ?? 'none'),
+    queryFn: () => api.fetchStatementRows(importId!),
+    enabled: Boolean(importId),
+  });
 }

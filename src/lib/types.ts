@@ -184,3 +184,26 @@ export interface YearRow {
   months: number;
   archived: boolean;
 }
+
+export interface StatementImport {
+  id: string;
+  name: string;
+  bank: string | null;
+  period_from: ISODate | null;
+  period_to: ISODate | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface StatementRow {
+  id: string;
+  import_id: string;
+  txn_date: ISODate;
+  direction: 'debit' | 'credit';
+  amount: Halalas;
+  kind: string | null;
+  description: string;
+  merchant: string | null;
+  category_id: string | null;
+  matched_expense_id: string | null;
+}
