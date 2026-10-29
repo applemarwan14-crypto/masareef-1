@@ -9,5 +9,5 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   // exceljs كبير لكنه يُحمَّل فقط عند التصدير
   build: { target: 'es2022', sourcemap: false, chunkSizeWarningLimit: 1000 },
-  test: { environment: 'node', include: ['src/**/*.test.ts'] },
+  test: { environment: 'node', include: ['src/**/*.test.ts', 'supabase/functions/**/*.test.ts'] },
 });
