@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 // المفتاح العام: من إعدادات البناء إن وُجد، وإلا من دالة push على الخادم
-let vapid: string | null | undefined = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+let vapid: string | null | undefined = import.meta.env.VITE_VAPID_PUBLIC_KEY || undefined; // السر الفارغ يصل نصاً فارغاً
 async function vapidKey(): Promise<string | null> {
   if (vapid !== undefined) return vapid;
   try {
