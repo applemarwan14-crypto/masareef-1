@@ -54,14 +54,14 @@ Deno.serve(async (req) => {
       });
       try {
         await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, {
-          TTL: 24 * 3600, urgency: URGENT.has(n.kind) ? 'high' : 'normal', topic: n.kind.slice(0, 32),
+          TTL: 24 * 3600, urgency: URGENT.has(n.kind) ? 'high' : 'normal',
         });
         sent++;
         used.push(s.id);
       } catch (e) {
         const status = (e as { statusCode?: number }).statusCode;
         if (status === 404 || status === 410) dead.push(s.id); // الاشتراك انتهى (حُذف التطبيق مثلاً)
-        else console.warn('push failed', status, (e as Error).message);
+        else console.warn('push failed', status, (e as { body?: string }).body ?? (e as Error).message);
       }
     })
   ));
