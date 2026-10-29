@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { Alarm, CaretLeft, ChartPieSlice, Receipt, Target, TrendDown, TrendUp } from '@phosphor-icons/react';
+import { AirplaneTilt, Alarm, Bell, CaretLeft, ChartPieSlice, Receipt, Sparkle, Target, TrendDown, TrendUp } from '@phosphor-icons/react';
 import { CategoryDonut, MonthlyBars } from '../components/Charts';
 import { ExpenseRow } from '../components/ExpenseList';
-import { useExpenseSheet } from '../components/Layout';
+import { CountBadge, useExpenseSheet } from '../components/Layout';
 import { Logo } from '../components/Logo';
 import { AnimatedAmount, Button, Card, CategoryIcon, EmptyState, MonthSwitcher, SectionTitle, Spinner, cx } from '../components/ui';
 import { useHousehold } from '../hooks/household';
-import { useCategories, useMonthExpenses, useMonthlyTotals, useRecurring, useRecurringPayments } from '../hooks/queries';
-import { addMonths, formatMonth, lastMonths, monthOf, todayISO } from '../lib/dates';
+import { useCategories, useMonthExpenses, useMonthlyTotals, useRecurring, useRecurringPayments, useRenewals, useTrips, useUnreadCount } from '../hooks/queries';
+import { addDays, addMonths, formatDayShort, formatMonth, lastMonths, monthOf, todayISO } from '../lib/dates';
 import { formatSAR, sumHalalas } from '../lib/money';
 import { recurringForMonth } from '../lib/recurring';
 import { budgetStatus, byCategory, changeRatio, monthlySeries } from '../lib/stats';
@@ -25,7 +25,16 @@ export default function Dashboard() {
   const recurring = useRecurring();
   const payments = useRecurringPayments(month);
 
-  const list = expenses.data ?? [];
+  const { data: trips = [] } = useTrips();
+  const { data: renewals = [] } = useRenewals();
+  const unread = useUnreadCount();
+  const openTrip = trips.find((t) => t.status === 'open');
+  const soonRenewals = renewals.filter((r) => r.status === 'active' && r.due_date >= today && r.due_date <= addDays(today, r.remind_days));
+
+  // مصاريف الرحلات منفصلة عن مصروف الشهر وميزانيته
+  const all = expenses.data ?? [];
+  const list = useMemo(() => all.filter((e) => !e.trip_id), [all]);
+  const tripTotal = sumHalalas(all.filter((e) => e.trip_id).map((e) => e.amount));
   const total = sumHalalas(list.map((e) => e.amount));
   const slices = useMemo(() => byCategory(list, categories), [list, categories]);
   const series = monthlySeries(monthly.data ?? [], lastMonths(monthOf(today), 6));
@@ -44,8 +53,29 @@ export default function Dashboard() {
             <p className="font-bold leading-tight">{me.display_name}</p>
           </div>
         </div>
-        <MonthSwitcher month={month} onChange={setMonth} />
+        <div className="flex items-center gap-1">
+          <Link to="/notifications" aria-label="الإشعارات"
+            className="relative flex size-10 items-center justify-center rounded-full bg-surface text-muted shadow-sm">
+            <Bell className="size-5" weight={unread ? 'fill' : 'regular'} />
+            {unread > 0 && <span className="absolute -end-1 -top-1"><CountBadge n={unread} /></span>}
+          </Link>
+          <MonthSwitcher month={month} onChange={setMonth} />
+        </div>
       </header>
+
+      {openTrip && (
+        <Link to={`/trips/${openTrip.id}`}
+          className="flex items-center gap-3 rounded-card bg-brand-soft px-4 py-3.5 text-sm transition active:opacity-80">
+          <span className="flex size-10 items-center justify-center rounded-2xl bg-brand/15 text-brand">
+            <AirplaneTilt className="size-6" weight="duotone" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{openTrip.name}</span>
+            <span className="text-xs text-muted">رحلة مفتوحة منذ {formatDayShort(openTrip.started_on)}، مصاريفها خارج مصروف الشهر</span>
+          </span>
+          <CaretLeft className="size-4 text-muted" weight="bold" />
+        </Link>
+      )}
 
       {/* البطاقة الرئيسية: إجمالي الشهر والميزانية */}
       <section className="hero relative overflow-hidden rounded-card p-5 shadow-lg shadow-brand/20">
@@ -93,6 +123,9 @@ export default function Dashboard() {
                   تقدرون تصرفون <span className="num font-semibold text-white">{formatSAR(budget.dailyAllowance)}</span> يومياً حتى آخر الشهر
                 </p>
               )}
+              {tripTotal > 0 && (
+                <p className="mt-1.5 text-xs text-white/70">+ <span className="num">{formatSAR(tripTotal)}</span> مصاريف رحلات (خارج الميزانية)</p>
+              )}
             </div>
           )}
         </div>
@@ -108,6 +141,20 @@ export default function Dashboard() {
             {unpaid.length === 1 ? 'مصروف ثابت واحد لم يُدفع' : `${unpaid.length} مصاريف ثابتة لم تُدفع`}
           </span>
           <span className="num font-bold">{formatSAR(sumHalalas(unpaid.map((u) => u.item.amount)))}</span>
+          <CaretLeft className="size-4 text-muted" weight="bold" />
+        </Link>
+      )}
+
+      {soonRenewals.length > 0 && (
+        <Link to="/renewals"
+          className="flex items-center gap-3 rounded-card bg-surface px-4 py-3.5 text-sm shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition active:opacity-80">
+          <span className="flex size-10 items-center justify-center rounded-2xl bg-warn/15 text-warn">
+            <Alarm className="size-6" weight="duotone" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-medium">{soonRenewals.map((r) => r.title).join('، ')}</span>
+            <span className="text-xs text-muted">أقرب موعد {formatDayShort(soonRenewals[0]!.due_date)}</span>
+          </span>
           <CaretLeft className="size-4 text-muted" weight="bold" />
         </Link>
       )}
@@ -144,6 +191,16 @@ export default function Dashboard() {
           </Card>
 
           <div className="space-y-5">
+            <Link to="/insights" className="flex items-center gap-3 rounded-card bg-surface p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition active:opacity-80">
+              <span className="flex size-10 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+                <Sparkle className="size-6" weight="duotone" />
+              </span>
+              <span className="flex-1">
+                <span className="block font-semibold">قراءة الشهر</span>
+                <span className="text-xs text-muted">متى تصرفون أكثر، المدفوعات المتكررة، والأعلى من المعتاد</span>
+              </span>
+              <CaretLeft className="size-4 text-muted" weight="bold" />
+            </Link>
             <Card>
               <SectionTitle>آخر 6 أشهر</SectionTitle>
               <MonthlyBars data={series} selected={month} onSelect={setMonth} />
@@ -155,8 +212,9 @@ export default function Dashboard() {
                   الكل <CaretLeft className="size-4" weight="bold" />
                 </Link>
               </div>
-              {list.slice(0, 6).map((e) => (
-                <ExpenseRow key={e.id} expense={e} category={categories.find((c) => c.id === e.category_id)} />
+              {all.slice(0, 6).map((e) => (
+                <ExpenseRow key={e.id} expense={e} category={categories.find((c) => c.id === e.category_id)}
+                  tripName={trips.find((t) => t.id === e.trip_id)?.name} />
               ))}
             </Card>
           </div>

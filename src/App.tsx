@@ -16,6 +16,14 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Expenses = lazy(() => import('./pages/Expenses'));
 const RecurringPage = lazy(() => import('./pages/Recurring'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Trips = lazy(() => import('./pages/Trips'));
+const Renewals = lazy(() => import('./pages/Renewals'));
+const Insights = lazy(() => import('./pages/Insights'));
+const Years = lazy(() => import('./pages/Years'));
+const Cards = lazy(() => import('./pages/Cards'));
+const SmsLog = lazy(() => import('./pages/SmsLog'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const More = lazy(() => import('./pages/More'));
 
 export default function App() {
   const { session, loading } = useAuth();
@@ -50,6 +58,15 @@ export default function App() {
             <Route path="expenses" element={<Expenses />} />
             <Route path="recurring" element={<RecurringPage />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="trips" element={<Trips />} />
+            <Route path="trips/:id" element={<Trips />} />
+            <Route path="renewals" element={<Renewals />} />
+            <Route path="insights" element={<Insights />} />
+            <Route path="years" element={<Years />} />
+            <Route path="cards" element={<Cards />} />
+            <Route path="sms" element={<SmsLog />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="more" element={<More />} />
             <Route path="*" element={<Dashboard />} />
           </Routes>
         </Suspense>

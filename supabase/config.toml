@@ -1,0 +1,11 @@
+# إعدادات دوال الخادم عند النشر بـ supabase functions deploy
+# sms: يستدعيها اختصار الآيفون برمز خاص (لا تسجيل دخول)
+# push: تستدعيها قاعدة البيانات بسرّ داخلي
+[functions.sms]
+verify_jwt = false
+
+[functions.push]
+verify_jwt = false
+
+[functions.ai]
+verify_jwt = true

@@ -12,10 +12,19 @@ export const keys = {
   monthly: (h: string, from: string) => ['monthly', h, from] as const,
   recurring: (h: string) => ['recurring', h] as const,
   recurringPayments: (h: string, m: string) => ['recurring-payments', h, m] as const,
+  cards: (h: string) => ['cards', h] as const,
+  trips: (h: string) => ['trips', h] as const,
+  tripExpenses: (t: string) => ['trip-expenses', t] as const,
+  renewals: (h: string) => ['renewals', h] as const,
+  notifications: (u: string) => ['notifications', u] as const,
+  prefs: (u: string) => ['prefs', u] as const,
+  sms: (u: string) => ['sms', u] as const,
+  snapshots: (h: string) => ['snapshots', h] as const,
+  years: (h: string) => ['years', h] as const,
 };
 
 /** كل ما يتأثر بتغيير في المصروفات */
-export const EXPENSE_DEPENDENT = ['expenses', 'monthly', 'recurring-payments'];
+export const EXPENSE_DEPENDENT = ['expenses', 'monthly', 'recurring-payments', 'trip-expenses', 'trips', 'years', 'sms'];
 
 const onError = (e: Error) => toast.error(e.message);
 
@@ -142,7 +151,7 @@ export function useUpdateHousehold() {
   const { household, me } = useHousehold();
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: async (v: { name?: string; monthly_budget?: number | null; display_name?: string }) => {
+    mutationFn: async (v: { name?: string; monthly_budget?: number | null; salary_day?: number; display_name?: string }) => {
       const { display_name, ...patch } = v;
       if (Object.keys(patch).length) await api.updateHousehold(household.id, patch);
       if (display_name) await api.updateDisplayName(household.id, me.user_id, display_name);
@@ -151,4 +160,135 @@ export function useUpdateHousehold() {
     onSettled: () => invalidate('household'),
     onError,
   });
+}
+
+// ---------- البطاقات ----------
+export function useCards() {
+  const { household } = useHousehold();
+  return useQuery({ queryKey: keys.cards(household.id), queryFn: () => api.fetchCards(household.id) });
+}
+
+export function useSaveCard() {
+  const { household } = useHousehold();
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (v: { input: api.CardInput; id?: string }) => api.saveCard(household.id, v.input, v.id),
+    onSuccess: () => toast.success('تم حفظ البطاقة'),
+    onSettled: () => invalidate('cards'),
+    onError,
+  });
+}
+
+export function useDeleteCard() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: api.deleteCard,
+    onSuccess: () => toast.success('تم حذف البطاقة'),
+    onSettled: () => invalidate('cards', 'expenses'),
+    onError,
+  });
+}
+
+// ---------- الرحلات ----------
+export function useTrips() {
+  const { household } = useHousehold();
+  return useQuery({ queryKey: keys.trips(household.id), queryFn: () => api.fetchTrips(household.id) });
+}
+
+export function useTripExpenses(tripId: string | undefined) {
+  return useQuery({
+    queryKey: keys.tripExpenses(tripId ?? 'none'),
+    queryFn: () => api.fetchTripExpenses(tripId!),
+    enabled: Boolean(tripId),
+  });
+}
+
+export function useSaveTrip() {
+  const { household } = useHousehold();
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (v: { input: api.TripInput; id?: string }) => api.saveTrip(household.id, v.input, v.id),
+    onSettled: () => invalidate('trips', ...EXPENSE_DEPENDENT),
+    onError,
+  });
+}
+
+export function useDeleteTrip() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: api.deleteTrip,
+    onSuccess: () => toast.success('تم حذف الرحلة، ومصاريفها رجعت لمصروف الشهر'),
+    onSettled: () => invalidate('trips', ...EXPENSE_DEPENDENT),
+    onError,
+  });
+}
+
+// ---------- التجديدات ----------
+export function useRenewals() {
+  const { household } = useHousehold();
+  return useQuery({ queryKey: keys.renewals(household.id), queryFn: () => api.fetchRenewals(household.id) });
+}
+
+export function useSaveRenewal() {
+  const { household } = useHousehold();
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (v: { input: api.RenewalInput; id?: string }) => api.saveRenewal(household.id, v.input, v.id),
+    onSettled: () => invalidate('renewals'),
+    onError,
+  });
+}
+
+export function useDeleteRenewal() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: api.deleteRenewal,
+    onSuccess: () => toast.success('تم الحذف'),
+    onSettled: () => invalidate('renewals'),
+    onError,
+  });
+}
+
+// ---------- الإشعارات ----------
+export function useNotifications() {
+  const { me } = useHousehold();
+  return useQuery({ queryKey: keys.notifications(me.user_id), queryFn: () => api.fetchNotifications() });
+}
+
+export function useUnreadCount() {
+  const { data = [] } = useNotifications();
+  return data.filter((n) => !n.read_at).length;
+}
+
+export function useDisabledKinds() {
+  const { me } = useHousehold();
+  return useQuery({ queryKey: keys.prefs(me.user_id), queryFn: () => api.fetchDisabledKinds(me.user_id) });
+}
+
+export function useSaveDisabledKinds() {
+  const { me } = useHousehold();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (disabled: string[]) => api.saveDisabledKinds(me.user_id, disabled),
+    onMutate: (disabled) => qc.setQueryData(keys.prefs(me.user_id), disabled),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['prefs'] }),
+    onError,
+  });
+}
+
+// ---------- رسائل البنك ----------
+export function useSmsMessages() {
+  const { me } = useHousehold();
+  return useQuery({ queryKey: keys.sms(me.user_id), queryFn: () => api.fetchSmsMessages() });
+}
+
+// ---------- التنظيم والسنوات ----------
+export function useSnapshots() {
+  const { household } = useHousehold();
+  return useQuery({ queryKey: keys.snapshots(household.id), queryFn: () => api.fetchSnapshots(household.id) });
+}
+
+export function useYearOverview() {
+  const { household } = useHousehold();
+  return useQuery({ queryKey: keys.years(household.id), queryFn: api.fetchYearOverview });
 }
