@@ -4,7 +4,7 @@
 //   renewal_parse  «تأمين السيارة ينتهي ١٥ رمضان» → تجديد جاهز للحفظ
 //   fx             سعر صرف اليوم لعملة (للإضافة اليدوية بعملة أجنبية)
 
-import { askJson } from '../_shared/claude.ts';
+import { askJson, claude } from '../_shared/claude.ts';
 import { rateToSar } from '../_shared/fx.ts';
 import { renewalDueDate } from '../_shared/pipeline.ts';
 import { cors, json, riyadhToday, serviceClient, userFromRequest } from '../_shared/supabase.ts';
@@ -41,6 +41,7 @@ Deno.serve(async (req) => {
   }
 
   if (!(action in LIMITS)) return json({ error: 'إجراء غير معروف' }, 400);
+  if (!claude()) return json({ error: 'ربط Claude غير مفعّل بعد (أضف ANTHROPIC_API_KEY في أسرار Supabase)' }, 503);
   const { data: allowed } = await db.rpc('ai_take_quota', { p_household: me.householdId, p_action: action, p_limit: LIMITS[action] });
   if (allowed === false) return json({ error: 'وصلتم الحد اليومي لهذا الطلب، جرّبوا بكرة' }, 429);
 
