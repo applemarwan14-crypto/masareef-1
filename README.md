@@ -56,22 +56,12 @@
 - **الإدارة:** المنشئ وحده يدير التصنيفات والميزانية والبطاقات والأعضاء.
 
 ### خطوات التفعيل (مرة واحدة)
-1. **قاعدة البيانات:** من Database → Extensions فعّل `pg_cron` و `pg_net`. بعدها في SQL Editor نفّذ الملفات من `0005` إلى `0016` في `supabase/migrations` **بالترتيب**. ثم نفّذ هذا السطر برابط مشروعك:
-   ```sql
-   select vault.create_secret('https://xxxx.supabase.co', 'project_url');
-   ```
-2. **مفاتيح الإشعارات (VAPID):** شغّل الأمر هذا مرة وحدة:
-   ```bash
-   npx web-push generate-vapid-keys
-   ```
-3. **أسرار دوال الخادم:** من Edge Functions → Secrets في Supabase أضف:
-   - `ANTHROPIC_API_KEY`: مفتاحك من console.anthropic.com
-   - `VAPID_PUBLIC_KEY` و `VAPID_PRIVATE_KEY`: من الخطوة 2
-   - `VAPID_SUBJECT`: بريدك بالشكل `mailto:you@example.com`
-   - (اختياري) `CLAUDE_MODEL`: الافتراضي `claude-opus-5-5`
-4. **أسرار GitHub:** أضف `VITE_VAPID_PUBLIC_KEY` (المفتاح العام نفسه)، و `SUPABASE_ACCESS_TOKEN` (من supabase.com/dashboard/account/tokens)، و `SUPABASE_PROJECT_REF` (رمز المشروع من رابطه). بعدها أي `push` على `main` ينشر الموقع والدوال (`sms` و `ai` و `push`) تلقائياً.
-5. **اختصار الآيفون:** غيّر رابط الاختصار إلى `https://xxxx.supabase.co/functions/v1/sms` بنفس المتن `{"token", "message"}`، واحذف خطوة إظهار الإشعار منه. الرمز والطريقة كاملة موجودة في الإعدادات ← رسائل البنك.
-6. **إشعارات الآيفون:** افتح الموقع في Safari، ثم مشاركة ← إضافة إلى الشاشة الرئيسية. افتحه من الشاشة الرئيسية، وبعدها الإعدادات ← تفعيل إشعارات الجوال (يحتاج iOS 16.4 أو أحدث).
+1. أنشئ رمز وصول من [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens).
+2. أضفه في GitHub ← Settings ← Secrets and variables ← Actions باسم `SUPABASE_ACCESS_TOKEN`.
+3. من تبويب Actions شغّل **Supabase** (Run workflow). ينفّذ ملفات قاعدة البيانات الجديدة، وينشئ مفاتيح الإشعارات، وينشر الدوال (`sms` و `ai` و `push`). بعدها يشتغل تلقائياً مع كل تعديل في مجلد `supabase`.
+4. **اختصار الآيفون:** غيّر الرابط إلى `https://xxxx.supabase.co/functions/v1/sms` بنفس المتن `{"token", "message"}`، واحذف خطوة إظهار الإشعار منه. الطريقة كاملة موجودة في الإعدادات ← رسائل البنك.
+5. **إشعارات الآيفون:** افتح الموقع في Safari، ثم مشاركة ← إضافة إلى الشاشة الرئيسية. افتحه من الشاشة الرئيسية، وبعدها الإعدادات ← تفعيل إشعارات الجوال (يحتاج iOS 16.4 أو أحدث).
+6. **ربط Claude (لاحقاً):** أضف `ANTHROPIC_API_KEY` في Supabase ← Edge Functions ← Secrets. إلى ذلك الحين تُقرأ الرسائل بالقارئ المحلي. وتقدر تختار النموذج بإضافة `CLAUDE_MODEL`، والافتراضي `claude-opus-5-5`.
 
 ### الاختبارات
 ```bash
