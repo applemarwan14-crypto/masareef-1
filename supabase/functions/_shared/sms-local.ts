@@ -109,11 +109,18 @@ export function prettyMerchant(raw: string | null): string | null {
 }
 
 function findMerchant(s: string): string | null {
-  const m = /(?:^|\n|\s)(?:من|لدى|عند|التاجر|المتجر|اسم التاجر|المفوتر|at|merchant|from)\s*[:：]\s*([^\n]{2,60})/iu.exec(s)
-    ?? /(?:^|\n|\s)(?:لدى|عند|at)\s+([^\n]{2,60})/iu.exec(s)
-    ?? /شراء\s+من\s+([^\n]{2,40}?)\s+(?:بمبلغ|مبلغ|بقيمة)/u.exec(s);
-  if (!m) return null;
-  return m[1]!.split(/\s+(?:بمبلغ|مبلغ|بقيمة|في|on|amount)\b/iu)[0]!.trim();
+  // قد تتكرر «من» (من حساب 0106* ثم من المتجر): نأخذ أول قيمة فيها حروف
+  const patterns = [
+    /(?:^|\n|\s)(?:من|لدى|عند|التاجر|المتجر|اسم التاجر|المفوتر|at|merchant|from)\s*[:：]?\s*([^\n]{2,60})/giu,
+    /شراء\s+من\s+([^\n]{2,40}?)\s+(?:بمبلغ|مبلغ|بقيمة)/gu,
+  ];
+  for (const re of patterns) {
+    for (const m of s.matchAll(re)) {
+      const v = m[1]!.split(/\s+(?:بمبلغ|مبلغ|بقيمة|في|on|amount)\b/iu)[0]!.trim();
+      if (/[\p{L}]{2,}/u.test(v.replace(/\b(?:sar|ريال)\b/giu, ''))) return v;
+    }
+  }
+  return null;
 }
 
 // ---------- البطاقة والبنك ----------
