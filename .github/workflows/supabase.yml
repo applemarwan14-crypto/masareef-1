@@ -1,0 +1,47 @@
+name: Supabase
+
+# يجهّز Supabase تلقائياً عند أي تعديل في مجلد supabase على main:
+# ينفّذ ملفات قاعدة البيانات الجديدة، يجهّز مفاتيح الإشعارات، وينشر الدوال (sms, ai, push).
+# يحتاج سرّاً واحداً في GitHub: SUPABASE_ACCESS_TOKEN (من supabase.com/dashboard/account/tokens).
+# رابط المشروع يُؤخذ من VITE_SUPABASE_URL الموجود مسبقاً.
+on:
+  push:
+    branches: [main]
+    paths: ['supabase/**', 'scripts/supabase-setup.mjs', '.github/workflows/supabase.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: supabase
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check token
+        id: check
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::warning::أضف السر SUPABASE_ACCESS_TOKEN في GitHub ثم أعد التشغيل"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.skip != 'true'
+        with:
+          node-version: 22
+      - name: Database, vault and secrets
+        if: steps.check.outputs.skip != 'true'
+        run: node scripts/supabase-setup.mjs
+      - uses: supabase/setup-cli@v1
+        if: steps.check.outputs.skip != 'true'
+        with:
+          version: latest
+      - name: Deploy functions
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          REF=$(echo "$SUPABASE_URL" | sed -E 's#https://([a-z0-9]+)\..*#\1#')
+          supabase functions deploy --project-ref "$REF" --use-api

@@ -1,6 +1,17 @@
 import { supabase } from './supabase';
 
-const VAPID = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+// المفتاح العام: من إعدادات البناء إن وُجد، وإلا من دالة push على الخادم
+let vapid: string | null | undefined = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+async function vapidKey(): Promise<string | null> {
+  if (vapid !== undefined) return vapid;
+  try {
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push`);
+    vapid = res.ok ? ((await res.json()) as { publicKey?: string }).publicKey ?? null : null;
+  } catch {
+    return null; // نحاول مرة ثانية لاحقاً
+  }
+  return vapid;
+}
 
 export type PushState = 'unsupported' | 'needs-install' | 'not-configured' | 'denied' | 'off' | 'on';
 
@@ -21,7 +32,7 @@ export async function pushState(): Promise<PushState> {
   // الآيفون: الإشعارات تعمل فقط بعد «إضافة إلى الشاشة الرئيسية» (iOS 16.4 فأحدث)
   if (isIOS() && !isStandalone()) return 'needs-install';
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return 'unsupported';
-  if (!VAPID) return 'not-configured';
+  if (!(await vapidKey())) return 'not-configured';
   if (Notification.permission === 'denied') return 'denied';
   const reg = await navigator.serviceWorker.getRegistration('./');
   const sub = await reg?.pushManager.getSubscription();
@@ -41,12 +52,13 @@ const b64 = (buf: ArrayBuffer | null) =>
 
 /** يطلب الإذن ويشترك ويحفظ الاشتراك في قاعدة البيانات. يجب استدعاؤه من ضغطة زر. */
 export async function enablePush(): Promise<PushState> {
-  if (!VAPID) return 'not-configured';
+  const key = await vapidKey();
+  if (!key) return 'not-configured';
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return permission === 'denied' ? 'denied' : 'off';
   const reg = (await registerServiceWorker()) ?? (await navigator.serviceWorker.ready);
   const sub = (await reg.pushManager.getSubscription())
-    ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID) }));
+    ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) }));
   const { error } = await supabase.from('push_subscriptions').upsert({
     endpoint: sub.endpoint,
     p256dh: b64(sub.getKey('p256dh')),

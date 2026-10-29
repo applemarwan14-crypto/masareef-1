@@ -3,7 +3,7 @@
 // أسرار مطلوبة: VAPID_PUBLIC_KEY، VAPID_PRIVATE_KEY، VAPID_SUBJECT (mailto:you@example.com).
 
 import webpush from 'npm:web-push@3.6.7';
-import { json, serviceClient } from '../_shared/supabase.ts';
+import { cors, json, serviceClient } from '../_shared/supabase.ts';
 
 const publicKey = Deno.env.get('VAPID_PUBLIC_KEY');
 const privateKey = Deno.env.get('VAPID_PRIVATE_KEY');
@@ -15,6 +15,9 @@ if (publicKey && privateKey) {
 const URGENT = new Set(['sms_added', 'duplicate', 'budget', 'sms_failed', 'test']);
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  // المفتاح العام ليس سراً: التطبيق يطلبه ليشترك في الإشعارات
+  if (req.method === 'GET') return publicKey ? json({ publicKey }) : json({ error: 'VAPID keys are not set' }, 503);
   const db = serviceClient();
   const secret = req.headers.get('x-cron-secret') ?? '';
   const { data: ok } = await db.rpc('verify_cron_secret', { p: secret });
