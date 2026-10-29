@@ -76,6 +76,11 @@ describe('parseLocal', () => {
     expect(p.renewal!.due_date).toMatch(/^2026-02-1[78]$/);
   });
 
+  it('skips «من» lines without a name (account number) — Al Rajhi online', () => {
+    const p = parseLocal('شراء انترنت\nبـ238 SAR\nمن 0106*\nمن THE CHEFZ\nمدى-ابل *0253\nفي 29/10/26 21:25', CATS, '2026-10-29');
+    expect(p).toMatchObject({ kind: 'purchase', amount: 238, merchant: 'ذا شفز', card_last4: '0253', category: 'تطبيقات التوصيل', date: '2026-10-29', payment_method: 'online' });
+  });
+
   it('cleans unknown merchants', () => {
     expect(prettyMerchant('ALMARAI SHOP*8812 RIYADH')).toBe('Almarai Shop');
     expect(prettyMerchant('مطعم الرومانسية')).toBe('مطعم الرومانسية');
