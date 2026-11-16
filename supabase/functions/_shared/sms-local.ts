@@ -16,8 +16,10 @@ const CURRENCY_WORDS: [RegExp, string][] = [
   [/^(egp|جنيه(?: مصري)?)$/i, 'EGP'],
 ];
 const ISO_CODES = 'SAR|USD|EUR|GBP|AED|KWD|BHD|QAR|OMR|EGP|JOD|TRY|CHF|JPY|CNY|INR|PKR|MYR|IDR|THB|SGD|AUD|CAD|GEL|AZN|MAD|LBP|CZK|SEK|NOK|DKK|PLN|HUF|LKR|PHP|KRW|ZAR|MVR|BAM|RUB';
-// حدود الكلمة: «TRY» داخل «COUNTRY» و«رس» داخل «رسالة» ليست عملات
-const CUR_TOKEN = `(?:\\b(?:${ISO_CODES})\\b|(?<![\\u0600-\\u06FF])(?:ر\\.?\\s?س|ريال(?: سعودي)?|دولار|يورو|درهم|ليرة|جنيه)(?![\\u0600-\\u06FF])|\\$|€|£)`;
+// حدود الكلمة بالحروف فقط: «TRY» داخل «COUNTRY» و«رس» داخل «رسالة» ليست عملات،
+// لكن «103.84SAR» (الرقم ملتصق بالعملة) عملة صحيحة.
+// ولا تُقرأ الرموز داخل الروابط مثل «bit.ly/jod8».
+const CUR_TOKEN = `(?:(?<![A-Za-z/.])(?:${ISO_CODES})(?![A-Za-z/])|(?<![\\u0600-\\u06FF])(?:ر\\.?\\s?س|ريال(?: سعودي)?|دولار|يورو|درهم|ليرة|جنيه)(?![\\u0600-\\u06FF])|\\$|€|£)`;
 const NUM = '(\\d+(?:\\.\\d{1,3})?)';
 
 function currencyOf(token: string): string {
@@ -44,9 +46,9 @@ function findMoney(s: string): Money[] {
       });
     }
   }
-  // «مبلغ: 45» بدون عملة → ريال
+  // «مبلغ: 45» أو «بـ45» بدون عملة → ريال
   if (!out.length) {
-    const m = /(?:مبلغ|بمبلغ|بقيمة|amount|amt)\s*[:：]?\s*(\d+(?:\.\d{1,2})?)/i.exec(s);
+    const m = /(?:مبلغ|بمبلغ|بقيمة|amount|amt|بـ)\s*[:：]?\s*(\d+(?:\.\d{1,2})?)/i.exec(s);
     if (m) out.push({ amount: Number(m[1]), currency: 'SAR', index: m.index, context: '' });
   }
   return out.sort((a, b) => a.index - b.index);
@@ -79,7 +81,7 @@ function findCountry(s: string): string | null {
 
 // ---------- المتجر ----------
 const BRANDS: [RegExp, string][] = [
-  [/noon/i, 'نون'], [/amazon|amzn/i, 'أمازون'], [/hunger\s?station/i, 'هنقرستيشن'], [/jahez/i, 'جاهز'],
+  [/noon/i, 'نون'], [/amazon|amzn/i, 'أمازون'], [/hunger\s?station/i, 'هنقرستيشن'], [/jahe/i, 'جاهز'],
   [/mrsool/i, 'مرسول'], [/to\s?you/i, 'ToYou'], [/keeta/i, 'كيتا'], [/the\s?chefz/i, 'ذا شفز'], [/ninja/i, 'نينجا'],
   [/danube/i, 'الدانوب'], [/panda/i, 'بنده'], [/othaim/i, 'العثيم'], [/carrefour/i, 'كارفور'], [/tamimi/i, 'التميمي'],
   [/lulu/i, 'لولو'], [/nesto/i, 'نستو'], [/starbucks/i, 'ستاربكس'], [/al\s?baik/i, 'البيك'], [/mcdonald/i, 'ماكدونالدز'],
@@ -95,14 +97,15 @@ const CITY = /\b(riyadh|jeddah|jiddah|dammam|khobar|makkah|mecca|madinah|medina|
 export function prettyMerchant(raw: string | null): string | null {
   if (!raw) return null;
   for (const [re, name] of BRANDS) if (re.test(raw)) return name;
-  const s = raw
+  const base = raw
     .replace(/\*+\s*\d*/g, ' ')
     .replace(/\b\d{3,}\b/g, ' ')
     .replace(/\.(com|sa|net)\b/gi, ' ')
     .replace(/\b(co|ltd|llc|est|company|trading|inc)\b\.?/gi, ' ')
-    .replace(CITY, ' ')
     .replace(/[|_#]+/g, ' ');
-  const v = clean(s, 60);
+  // اسم المدينة يُحذف إلا إذا كان جزءاً أساسياً من الاسم (مثل «Riyadh Park»)
+  const noCity = clean(base.replace(CITY, ' '), 60);
+  const v = noCity && noCity.length >= 3 ? noCity : clean(base, 60);
   if (!v) return null;
   // أحرف لاتينية كبيرة كلها → أول حرف كبير
   return /[a-z]/.test(v) || !/[A-Z]/.test(v) ? v : v.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());

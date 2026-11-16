@@ -103,3 +103,31 @@ describe('hijri', () => {
     expect(findDate('15/03/2027')).toEqual({ iso: '2027-03-15', hijri: false });
   });
 });
+
+describe('amount glued to currency (new bank format)', () => {
+  it('reads «بـ103.84SAR» with merchant, card and date', () => {
+    const p = parseLocal('شراء انترنت\nبـ103.84SAR\nمن0106*\nمنNoon\nمدى-ابل*0253\n16/11/26 11:00', CATS, '2026-11-16');
+    expect(p).toMatchObject({
+      kind: 'purchase', amount: 103.84, currency: 'SAR', merchant: 'نون', date: '2026-11-16',
+      card_last4: '0253', payment_method: 'online', category: 'التسوق والمشتريات',
+    });
+  });
+
+  it('maps «MYSR Jahe» to جاهز and keeps short city-based names', () => {
+    expect(parseLocal('شراء انترنت\nبـ41SAR\nمن0106*\nمنMYSR Jahe\nمدى-ابل*0253\n12/11/26 09:50', CATS, '2026-11-16'))
+      .toMatchObject({ amount: 41, merchant: 'جاهز', category: 'تطبيقات التوصيل' });
+    expect(prettyMerchant('Riyadh Pa')).toBe('Riyadh Pa');
+  });
+
+  it('does not read currency codes inside links', () => {
+    const p = parseLocal('نل أجور مكة والمدينة\nوتبرع بصك لشراء برادة سقيا المعتمرين bit.ly/jod8', CATS, '2026-11-16');
+    expect(p.amount).toBeNull();
+  });
+});
+
+describe('currency punctuation', () => {
+  it('reads codes after a colon and before a full stop', () => {
+    expect(parseLocal('شراء\nمبلغ:SAR 12', CATS, TODAY).amount).toBe(12);
+    expect(parseLocal('Purchase of 50 SAR. at Danube', CATS, TODAY).amount).toBe(50);
+  });
+});
