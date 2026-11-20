@@ -33,13 +33,13 @@ export default function Onboarding() {
     <div className="flex min-h-dvh items-center justify-center p-5">
       <div className="w-full max-w-sm">
         <Logo className="mb-5 size-14" />
-        <h1 className="text-2xl font-bold">لنجهّز حسابكم</h1>
+        <h1 className="display text-[30px]">لنجهّز حسابكم</h1>
         <p className="mt-2 text-muted">أحدكما ينشئ العائلة، والآخر ينضم برمز الدعوة من صفحة الإعدادات.</p>
 
-        <div className="mt-6 grid grid-cols-2 rounded-2xl bg-surface-2 p-1" role="tablist">
+        <div className="mt-6 grid grid-cols-2 rounded-full bg-surface-2 p-1" role="tablist">
           {(['create', 'join'] as const).map((m) => (
             <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
-              className={cx('h-10 rounded-xl text-sm font-semibold', mode === m ? 'bg-surface shadow-sm' : 'text-muted')}>
+              className={cx('h-10 rounded-full text-sm font-medium transition', mode === m ? 'bg-surface text-ink shadow-[var(--shadow-lift)]' : 'text-muted')}>
               {m === 'create' ? 'إنشاء عائلة' : 'لدي رمز دعوة'}
             </button>
           ))}
@@ -52,7 +52,7 @@ export default function Onboarding() {
             ? <Field label="اسم العائلة (اختياري)" placeholder="بيت العائلة" maxLength={60} value={householdName} onChange={(e) => setHouseholdName(e.target.value)} />
             : <Field label="رمز الدعوة" dir="ltr" required className="[&_input]:text-center [&_input]:tracking-[.3em] [&_input]:uppercase"
                 value={code} onChange={(e) => setCode(e.target.value)} />}
-          <Button type="submit" loading={loading} className="w-full">{mode === 'create' ? 'إنشاء العائلة' : 'انضمام'}</Button>
+          <Button type="submit" variant="brand" loading={loading} className="h-14 w-full text-base">{mode === 'create' ? 'إنشاء العائلة' : 'انضمام'}</Button>
         </form>
         <button type="button" onClick={() => supabase.auth.signOut()} className="mt-5 w-full text-center text-sm text-muted hover:text-ink">
           تسجيل الخروج

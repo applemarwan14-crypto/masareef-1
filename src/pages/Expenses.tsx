@@ -1,13 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
-import { AirplaneTilt, CalendarDots, FilePdf, FileXls, FunnelSimple, MagnifyingGlass, Receipt, Tag, User, X } from '@phosphor-icons/react';
+import { AirplaneTilt, CalendarDots, FilePdf, FileXls, FunnelSimple, MagnifyingGlass, Receipt, User, X } from '@phosphor-icons/react';
 import { ExpenseGroups } from '../components/ExpenseList';
-import { Button, EmptyState, IconButton, MonthSwitcher, Select, Spinner } from '../components/ui';
+import { Button, EmptyState, IconButton, Money, MonthSwitcher, PageHeader, Select, Spinner, cx, fieldClass } from '../components/ui';
 import { useHousehold } from '../hooks/household';
 import { useCategories, useExpenses, useTrips } from '../hooks/queries';
 import { exportExcel, printReport } from '../lib/export';
 import { formatDayShort, formatMonth, monthEnd, monthOf, todayISO } from '../lib/dates';
-import { formatSAR, sumHalalas } from '../lib/money';
+import { sumHalalas } from '../lib/money';
 import { filterExpenses } from '../lib/stats';
 import type { MonthKey } from '../lib/types';
 
@@ -57,75 +57,89 @@ export default function Expenses() {
   }
 
   return (
-    <div className="space-y-4 pt-4">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">العمليات</h1>
-        <div className="flex items-center gap-1">
+    <div className="space-y-5">
+      <PageHeader title="العمليات" subtitle={custom ? periodLabel : undefined}
+        actions={<>
           {!custom && <MonthSwitcher month={month} onChange={setMonth} />}
           <IconButton label={custom ? 'العودة للعرض الشهري' : 'نطاق تاريخ مخصص'}
             onClick={() => { setCustom(!custom); setRange({ from: month, to: monthEnd(month) }); }}
-            className={custom ? 'bg-brand-soft text-brand' : 'bg-surface shadow-sm'}>
+            className={custom ? 'bg-panel text-panel-ink hover:bg-panel-2 hover:text-panel-ink' : 'bg-surface shadow-[var(--shadow-card)]'}>
             <CalendarDots className="size-5" weight={custom ? 'fill' : 'regular'} />
           </IconButton>
-        </div>
-      </header>
+        </>} />
 
       {custom && (
         <div className="grid grid-cols-2 gap-2">
-          <label className="text-sm text-muted">من
+          <label className="text-[13px] font-medium text-ink-2">من
             <input type="date" value={range.from} max={range.to} onChange={(e) => e.target.value && setRange({ ...range, from: e.target.value })}
-              className="mt-1 h-12 w-full rounded-2xl border border-line bg-surface px-3 text-base text-ink" />
+              className={cx(fieldClass, 'mt-1.5')} />
           </label>
-          <label className="text-sm text-muted">إلى
+          <label className="text-[13px] font-medium text-ink-2">إلى
             <input type="date" value={range.to} min={range.from} onChange={(e) => e.target.value && setRange({ ...range, to: e.target.value })}
-              className="mt-1 h-12 w-full rounded-2xl border border-line bg-surface px-3 text-base text-ink" />
+              className={cx(fieldClass, 'mt-1.5')} />
           </label>
         </div>
       )}
 
-      <div className="relative">
-        <MagnifyingGlass className="pointer-events-none absolute start-4 top-1/2 size-5 -translate-y-1/2 text-muted" />
-        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث في الوصف أو التصنيف أو المبلغ"
-          className="h-12 w-full rounded-2xl border border-line bg-surface ps-11 pe-4 text-base outline-none focus:border-brand focus:ring-4 focus:ring-brand/10" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <Select label="التصنيف" icon={Tag} value={categoryId} onChange={setCategoryId}
-          options={[{ value: '', label: 'كل التصنيفات' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} />
-        <Select label="الشخص" icon={User} value={memberId} onChange={setMemberId}
-          options={[{ value: '', label: 'الجميع' }, ...members.map((m) => ({ value: m.user_id, label: m.display_name }))]} />
-        {trips.length > 0 && (
-          <Select label="النوع" icon={AirplaneTilt} value={scope} onChange={setScope}
-            options={[{ value: 'all', label: 'كل العمليات' }, { value: 'monthly', label: 'مصروف الشهر' }, { value: 'trips', label: 'الرحلات' }]} />
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card bg-surface px-5 py-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
-        <div>
-          <p className="text-sm text-muted">{filtered.length} عملية{hasFilters && ' مطابقة'}</p>
-          <p className="num text-2xl font-bold">{formatSAR(total)}</p>
+      {/* شريط المجموع: الرقم أولاً، والتصدير كأزرار صغيرة */}
+      <section className="surface flex items-center gap-4 p-5">
+        <div className="min-w-0 flex-1">
+          <p className="eyebrow">{filtered.length} عملية{hasFilters && ' مطابقة'}</p>
+          <Money value={total} className="display mt-1.5 text-[30px]" />
         </div>
-        <div className="flex gap-2">
-          {hasFilters && (
-            <Button variant="ghost" className="h-10 px-3 text-sm"
-              onClick={() => { setQuery(''); setCategoryId(''); setMemberId(''); setScope('all'); }}>
-              <X className="size-4" weight="bold" /> مسح
+        <IconButton label="تصدير Excel" onClick={onExcel} disabled={!filtered.length || exporting} className="size-11 bg-surface-2">
+          <FileXls className="size-[22px] text-[#1D7044]" weight="duotone" />
+        </IconButton>
+        <IconButton label="تقرير PDF" onClick={onPdf} disabled={!filtered.length} className="size-11 bg-surface-2">
+          <FilePdf className="size-[22px] text-[#C2410C]" weight="duotone" />
+        </IconButton>
+      </section>
+
+      <div className="space-y-3">
+        <div className="relative">
+          <MagnifyingGlass className="pointer-events-none absolute start-4 top-1/2 size-5 -translate-y-1/2 text-muted" />
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث بالمتجر أو الوصف أو المبلغ"
+            className={cx(fieldClass, 'bg-surface ps-11 shadow-[var(--shadow-card)]')} />
+        </div>
+        {/* التصنيفات كشرائح قابلة للتمرير */}
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          <Chip active={!categoryId} onClick={() => setCategoryId('')}>الكل</Chip>
+          {categories.filter((c) => !c.is_archived).map((c) => (
+            <Chip key={c.id} active={categoryId === c.id} onClick={() => setCategoryId(categoryId === c.id ? '' : c.id)} color={c.color}>
+              {c.name}
+            </Chip>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Select label="الشخص" icon={User} value={memberId} onChange={setMemberId}
+            options={[{ value: '', label: 'الجميع' }, ...members.map((m) => ({ value: m.user_id, label: m.display_name }))]} />
+          {trips.length > 0 ? (
+            <Select label="النوع" icon={AirplaneTilt} value={scope} onChange={setScope}
+              options={[{ value: 'all', label: 'كل العمليات' }, { value: 'monthly', label: 'مصروف الشهر' }, { value: 'trips', label: 'الرحلات' }]} />
+          ) : hasFilters ? (
+            <Button variant="ghost" className="h-12" onClick={() => { setQuery(''); setCategoryId(''); setMemberId(''); setScope('all'); }}>
+              <X className="size-4" weight="bold" /> مسح التصفية
             </Button>
-          )}
-          <Button variant="secondary" className="h-10 px-3 text-sm" onClick={onExcel} loading={exporting} disabled={!filtered.length}>
-            <FileXls className="size-5 text-[#1D7044]" weight="duotone" /> Excel
-          </Button>
-          <Button variant="secondary" className="h-10 px-3 text-sm" onClick={onPdf} disabled={!filtered.length}>
-            <FilePdf className="size-5 text-[#C2410C]" weight="duotone" /> PDF
-          </Button>
+          ) : <span />}
         </div>
       </div>
 
       {isPending ? <Spinner /> : filtered.length === 0
-        ? <EmptyState icon={hasFilters ? FunnelSimple : Receipt} title={hasFilters ? 'لا توجد نتائج مطابقة' : 'لا توجد عمليات في هذه الفترة'}>
+        ? <div className="surface"><EmptyState icon={hasFilters ? FunnelSimple : Receipt} title={hasFilters ? 'لا توجد نتائج مطابقة' : 'لا توجد عمليات في هذه الفترة'}>
             {hasFilters ? 'جرّب تغيير كلمات البحث أو التصفية' : 'اضغط زر + لإضافة مصروف'}
-          </EmptyState>
+          </EmptyState></div>
         : <ExpenseGroups expenses={filtered} categories={categories} tripNames={tripNames} />}
     </div>
+  );
+}
+
+function Chip({ active, onClick, children, color }: { active: boolean; onClick: () => void; children: ReactNode; color?: string }) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={active}
+      className={cx('press inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-3.5 text-[13px] font-medium',
+        active ? 'bg-panel text-panel-ink' : 'bg-surface text-ink-2 shadow-[var(--shadow-card)]')}>
+      {color && <span className="size-2 rounded-full" style={{ background: color }} />}
+      {children}
+    </button>
   );
 }

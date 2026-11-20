@@ -23,19 +23,19 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center p-5">
-      <div className="w-full max-w-sm">
-        <div className="mb-8">
-          <Logo className="mb-5 size-16 drop-shadow-lg" />
-          <h1 className="text-3xl font-bold">مصاريف البيت</h1>
-          <p className="mt-2 text-muted">سجّلوا مصاريف العائلة في ثوانٍ، واعرفوا أين يذهب كل ريال.</p>
-        </div>
+    <div className="pt-safe flex min-h-dvh flex-col p-4">
+      <section className="panel flex flex-1 flex-col justify-end p-7 pb-8">
+        <Logo className="mb-6 size-14" />
+        <h1 className="display text-[34px]">مصاريف البيت</h1>
+        <p className="mt-3 max-w-xs leading-relaxed text-panel-muted">سجّلوا مصاريف العائلة في ثوانٍ، واعرفوا أين يذهب كل ريال.</p>
+      </section>
+      <div className="mx-auto w-full max-w-sm px-2 pb-6 pt-7">
         <form onSubmit={submit} className="space-y-4">
           <Field label="البريد الإلكتروني" type="email" dir="ltr" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <Field label="كلمة المرور" type="password" dir="ltr" minLength={8} required
             autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
             value={password} onChange={(e) => setPassword(e.target.value)} />
-          <Button type="submit" loading={loading} className="w-full">
+          <Button type="submit" variant="brand" loading={loading} className="h-14 w-full text-base">
             {mode === 'signin' ? 'تسجيل الدخول' : 'إنشاء حساب'}
           </Button>
         </form>

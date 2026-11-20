@@ -21,8 +21,8 @@ export default function SmsLogPage() {
   const failed = data.filter((m) => m.status === 'failed').length;
 
   return (
-    <div className="space-y-4 pt-4">
-      <h1 className="text-xl font-bold">رسائل البنك</h1>
+    <div className="space-y-5">
+      <h1 className="display text-[28px]">رسائل البنك</h1>
       <p className="text-sm leading-relaxed text-muted">
         كل رسالة أرسلها اختصار الآيفون. يقرأها Claude (وإن ما رد نقرأها محلياً)، ونخفي الرصيد قبل الإرسال.
         رسائلك تظهر لك فقط.
@@ -30,7 +30,7 @@ export default function SmsLogPage() {
       <div className="flex gap-2">
         {(['all', 'failed'] as const).map((f) => (
           <button key={f} type="button" onClick={() => setFilter(f)}
-            className={cx('h-9 rounded-full px-4 text-sm font-semibold', filter === f ? 'bg-ink text-bg' : 'bg-surface-2')}>
+            className={cx('press h-9 rounded-full px-4 text-[13px] font-medium', filter === f ? 'bg-panel text-panel-ink' : 'bg-surface text-ink-2 shadow-[var(--shadow-card)]')}>
             {f === 'all' ? 'الكل' : `ما انسجلت (${failed})`}
           </button>
         ))}
@@ -54,7 +54,7 @@ function SmsRow({ m, onDeleted }: { m: SmsMessage; onDeleted: () => void }) {
   const sarGuess = parsed?.amount && (!parsed.currency || parsed.currency === 'SAR') ? Math.round(parsed.amount * 100) : undefined;
 
   return (
-    <li className="rounded-card bg-surface p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
+    <li className="surface p-4">
       <div className="mb-2 flex items-center justify-between text-xs">
         <span className={cx('inline-flex items-center gap-1 font-semibold', s.className)}>
           <s.Icon className="size-4" weight="fill" /> {s.label}{m.reason && ` · ${m.reason}`}

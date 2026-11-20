@@ -1,16 +1,16 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
-import { AirplaneTilt, ArrowCounterClockwise, CaretLeft, CaretRight, Flag, PencilSimple, Plus } from '@phosphor-icons/react';
+import { AirplaneTilt, ArrowCounterClockwise, CaretRight, Flag, PencilSimple, Plus } from '@phosphor-icons/react';
 import { CategoryDonut } from '../components/Charts';
 import { ExpenseGroups } from '../components/ExpenseList';
 import { useExpenseSheet } from '../components/Layout';
-import { Button, Card, CategoryIcon, ConfirmButton, EmptyState, Field, IconButton, Sheet, Spinner, cx } from '../components/ui';
+import { Button, Card, CategoryIcon, ConfirmButton, EmptyState, Field, IconButton, Meter, Money, PageHeader, Sheet, Spinner, Stagger, StaggerItem, cx } from '../components/ui';
 import { useCategories, useDeleteTrip, useInvalidate, useSaveTrip, useTripExpenses, useTrips } from '../hooks/queries';
 import { reopenTrip } from '../lib/api';
 import { formatDayShort, todayISO } from '../lib/dates';
 import { countryName, flag } from '../lib/labels';
-import { formatSAR, parseAmount, sumHalalas, toInputValue } from '../lib/money';
+import { parseAmount, sumHalalas, toInputValue } from '../lib/money';
 import { byCategory } from '../lib/stats';
 import type { Trip } from '../lib/types';
 
@@ -29,44 +29,57 @@ function TripList() {
   const [creating, setCreating] = useState(false);
 
   return (
-    <div className="space-y-4 pt-4">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">الرحلات</h1>
-        <Button variant="secondary" className="h-10 px-3 text-sm" onClick={() => setCreating(true)}>
-          <Plus className="size-4" weight="bold" /> رحلة جديدة
-        </Button>
-      </header>
-      <p className="text-sm leading-relaxed text-muted">
-        أول شراء من محل خارج السعودية يفتح رحلة تلقائياً، وأول شراء داخل السعودية أو 3 أيام بدون مشتريات من برا يقفلها.
-        مصاريف الرحلة منفصلة عن مصروف الشهر وميزانيته.
-      </p>
+    <div className="space-y-5">
+      <PageHeader title="الرحلات" subtitle="تنفتح تلقائياً مع أول شراء من الخارج، ومصاريفها خارج ميزانية الشهر"
+        actions={<Button variant="outline" className="h-10 px-4 text-[13px]" onClick={() => setCreating(true)}>
+          <Plus className="size-4" weight="bold" /> رحلة</Button>} />
 
       {isPending ? <Spinner /> : trips.length === 0 ? (
-        <EmptyState icon={AirplaneTilt} title="ما في رحلات بعد">رحلتكم الجاية تنفتح هنا تلقائياً من رسائل البنك.</EmptyState>
+        <div className="surface"><EmptyState icon={AirplaneTilt} title="ما في رحلات بعد">رحلتكم الجاية تنفتح هنا تلقائياً من رسائل البنك.</EmptyState></div>
       ) : (
-        <div className="space-y-2">
+        <Stagger className="space-y-3">
           {trips.map((t) => (
-            <Link key={t.id} to={`/trips/${t.id}`}
-              className="flex items-center gap-3 rounded-card bg-surface p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition active:opacity-80">
-              <span className={cx('flex size-11 items-center justify-center rounded-2xl text-2xl', t.status === 'open' ? 'bg-brand-soft' : 'bg-surface-2')}>
-                {flag(t.countries[0]) || <AirplaneTilt className="size-6 text-brand" weight="duotone" />}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2 font-semibold">
-                  <span className="truncate">{t.name}</span>
-                  {t.status === 'open' && <span className="rounded-full bg-brand px-2 py-0.5 text-[11px] text-brand-ink">مفتوحة</span>}
-                </span>
-                <span className="text-xs text-muted">{tripDates(t)}{t.countries.length > 1 && ` · ${t.countries.map(flag).join(' ')}`}</span>
-              </span>
-              <CaretLeft className="size-4 text-muted" weight="bold" />
-            </Link>
+            <StaggerItem key={t.id}>
+              <BoardingPass trip={t} />
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       )}
 
       <Sheet open={creating} onOpenChange={setCreating} title="رحلة جديدة">
         <TripForm onDone={() => setCreating(false)} />
       </Sheet>
+    </div>
+  );
+}
+
+/** بطاقة الرحلة على شكل بطاقة صعود الطائرة */
+function BoardingPass({ trip: t }: { trip: Trip }) {
+  const open = t.status === 'open';
+  return (
+    <Link to={`/trips/${t.id}`} className={cx('press ticket block', open ? 'panel' : 'surface')} style={{ ['--notch-at' as string]: '66%' }}>
+      <div className="flex items-start justify-between gap-3 p-5 pb-4">
+        <div className="min-w-0">
+          <p className={cx('text-[11px]', open ? 'text-panel-muted' : 'text-muted')}>{open ? 'رحلة مفتوحة' : 'رحلة منتهية'}</p>
+          <p className="mt-1 truncate text-[19px] font-semibold">{t.name}</p>
+        </div>
+        <span className="text-[34px] leading-none">{t.countries.map(flag).slice(0, 3).join('') || '✈️'}</span>
+      </div>
+      <div className="mx-4 perforation opacity-60" />
+      <div className="grid grid-cols-3 gap-2 p-5 pt-4 text-[11px]">
+        <PassField label="من" value={formatDayShort(t.started_on)} dark={open} />
+        <PassField label="إلى" value={t.ended_on ? formatDayShort(t.ended_on) : 'الآن'} dark={open} />
+        <PassField label="الدول" value={t.countries.length ? t.countries.length : '—'} dark={open} />
+      </div>
+    </Link>
+  );
+}
+
+function PassField({ label, value, dark }: { label: string; value: ReactNode; dark?: boolean }) {
+  return (
+    <div>
+      <p className={dark ? 'text-panel-muted' : 'text-muted'}>{label}</p>
+      <p className="mt-0.5 text-[14px] font-semibold">{value}</p>
     </div>
   );
 }
@@ -111,40 +124,37 @@ function TripDetail({ id }: { id: string }) {
   }
 
   return (
-    <div className="space-y-4 pt-4">
-      <header className="flex items-center gap-2">
+    <div className="space-y-5">
+      <header className="flex items-center gap-2 pt-4">
         <IconButton label="رجوع" onClick={() => navigate('/trips')}><CaretRight className="size-5" weight="bold" /></IconButton>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-bold">{trip.name}</h1>
+          <h1 className="truncate display text-[28px]">{trip.name}</h1>
           <p className="text-xs text-muted">{tripDates(trip)} · {trip.countries.map((c) => `${flag(c)} ${countryName(c)}`).join('، ')}</p>
         </div>
         <IconButton label="تعديل" onClick={() => setEditing(true)}><PencilSimple className="size-5" /></IconButton>
       </header>
 
-      <section className="hero rounded-card p-5 shadow-lg shadow-brand/20">
-        <p className="text-sm text-white/75">إجمالي الرحلة</p>
-        <p className="num mt-1 text-4xl font-bold">{formatSAR(total)}</p>
-        {fees > 0 && <p className="mt-1 text-xs text-white/75">منها رسوم بطاقات دولية <span className="num">{formatSAR(fees)}</span></p>}
+      <section className="panel p-6">
+        <p className="text-[13px] text-panel-muted">إجمالي الرحلة</p>
+        <Money value={total} className="display mt-3 text-[42px]" />
+        {fees > 0 && <p className="mt-2 text-xs text-panel-muted">منها رسوم بطاقات دولية <Money value={fees} /></p>}
         {trip.budget ? (
-          <div className="mt-4">
-            <div className="mb-1.5 flex justify-between text-xs text-white/80">
-              <span>{total <= trip.budget ? `باقي ${formatSAR(trip.budget - total)}` : `تجاوزتوا بـ ${formatSAR(total - trip.budget)}`}</span>
-              <span>من {formatSAR(trip.budget)}</span>
-            </div>
-            <div className="h-2.5 overflow-hidden rounded-full bg-white/15">
-              <div className={cx('h-full rounded-full', ratio > 1 ? 'bg-[#FF8A7A]' : ratio >= 0.8 ? 'bg-gold' : 'bg-white')}
-                style={{ width: `${Math.min(ratio, 1) * 100}%` }} />
+          <div className="mt-6">
+            <Meter ratio={ratio} segments={28} track="bg-white/10" tone={ratio > 1 ? 'danger' : ratio >= 0.8 ? 'warn' : 'panel'} />
+            <div className="mt-3 flex justify-between text-xs text-panel-muted">
+              <span>{total <= trip.budget ? <>باقي <Money value={trip.budget - total} /></> : <>تجاوزت بـ <Money value={total - trip.budget} /></>}</span>
+              <span>من <Money value={trip.budget} /></span>
             </div>
           </div>
         ) : (
-          <button type="button" onClick={() => setEditing(true)} className="mt-4 rounded-2xl bg-white/12 px-4 py-2.5 text-sm font-medium">
+          <button type="button" onClick={() => setEditing(true)} className="press mt-5 rounded-full bg-white/[.08] px-4 py-2.5 text-[13px] font-medium">
             حدّد ميزانية للرحلة
           </button>
         )}
       </section>
 
       <div className="flex gap-2">
-        <Button className="flex-1" onClick={() => openSheet(undefined, { trip_id: trip.id })}>
+        <Button variant="brand" className="flex-1" onClick={() => openSheet(undefined, { trip_id: trip.id })}>
           <Plus className="size-5" weight="bold" /> مصروف للرحلة
         </Button>
         <Button variant="secondary" onClick={toggle} loading={save.isPending}>
@@ -161,7 +171,7 @@ function TripDetail({ id }: { id: string }) {
                 <li key={s.categoryId} className="flex items-center gap-3 text-sm">
                   <CategoryIcon category={s.category} size="sm" />
                   <span className="flex-1 font-medium">{s.category?.name}</span>
-                  <span className="num font-semibold">{formatSAR(s.total)}</span>
+                  <span className="num font-semibold"><Money value={s.total} /></span>
                   <span className="num w-9 text-end text-xs text-muted">{s.percent}%</span>
                 </li>
               ))}
@@ -169,10 +179,10 @@ function TripDetail({ id }: { id: string }) {
           </Card>
           {byCurrency.length > 0 && (
             <Card>
-              <h2 className="mb-3 font-bold">حسب العملة</h2>
+              <h2 className="mb-3 font-semibold">حسب العملة</h2>
               <ul className="space-y-2 text-sm">
                 {byCurrency.map(([cur, v]) => (
-                  <li key={cur} className="flex justify-between"><span>{cur}</span><span className="num font-semibold">{formatSAR(v)}</span></li>
+                  <li key={cur} className="flex justify-between"><span>{cur}</span><span className="num font-semibold"><Money value={v} /></span></li>
                 ))}
               </ul>
             </Card>

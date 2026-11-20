@@ -1,8 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { NavLink } from 'react-router';
+import { NavLink, useLocation } from 'react-router';
+import { AnimatePresence, motion } from 'motion/react';
 import {
-  AirplaneTilt, Bell, CalendarCheck, ChartLineUp, ChatCircleText, CreditCard, DotsThreeOutline, GearSix, House,
-  ListBullets, Plus, Repeat, Stack, type Icon,
+  AirplaneTilt, Bell, CalendarCheck, ChartLineUp, ChatCircleText, CreditCard, GearSix, House, ListBullets,
+  Plus, Repeat, SquaresFour, Stack, type Icon,
 } from '@phosphor-icons/react';
 import { useHousehold } from '../hooks/household';
 import { useUnreadCount } from '../hooks/queries';
@@ -17,78 +18,100 @@ const SheetCtx = createContext<(expense?: Expense, preset?: Partial<Expense>) =>
 /** يفتح نافذة إضافة مصروف جديد (مع قيم مبدئية اختيارية)، أو تعديل مصروف موجود */
 export const useExpenseSheet = () => useContext(SheetCtx);
 
-export interface NavItem { to: string; label: string; icon: Icon; end?: boolean }
+export interface NavItem { to: string; label: string; icon: Icon; end?: boolean; group?: 'main' | 'plan' | 'more' }
 
 export const NAV: NavItem[] = [
-  { to: '/', label: 'الرئيسية', icon: House, end: true },
-  { to: '/expenses', label: 'العمليات', icon: ListBullets },
-  { to: '/recurring', label: 'الثابتة', icon: Repeat },
-  { to: '/trips', label: 'الرحلات', icon: AirplaneTilt },
-  { to: '/renewals', label: 'التجديدات', icon: CalendarCheck },
-  { to: '/insights', label: 'قراءات', icon: ChartLineUp },
-  { to: '/years', label: 'السنوات', icon: Stack },
-  { to: '/cards', label: 'البطاقات', icon: CreditCard },
-  { to: '/sms', label: 'رسائل البنك', icon: ChatCircleText },
-  { to: '/notifications', label: 'الإشعارات', icon: Bell },
-  { to: '/settings', label: 'الإعدادات', icon: GearSix },
+  { to: '/', label: 'الرئيسية', icon: House, end: true, group: 'main' },
+  { to: '/expenses', label: 'العمليات', icon: ListBullets, group: 'main' },
+  { to: '/recurring', label: 'الثابتة', icon: Repeat, group: 'main' },
+  { to: '/insights', label: 'قراءات', icon: ChartLineUp, group: 'main' },
+  { to: '/trips', label: 'الرحلات', icon: AirplaneTilt, group: 'plan' },
+  { to: '/renewals', label: 'التجديدات', icon: CalendarCheck, group: 'plan' },
+  { to: '/years', label: 'السنوات', icon: Stack, group: 'plan' },
+  { to: '/cards', label: 'البطاقات', icon: CreditCard, group: 'more' },
+  { to: '/sms', label: 'رسائل البنك', icon: ChatCircleText, group: 'more' },
+  { to: '/notifications', label: 'الإشعارات', icon: Bell, group: 'more' },
+  { to: '/settings', label: 'الإعدادات', icon: GearSix, group: 'more' },
 ];
 
-const MOBILE: NavItem[] = [NAV[0]!, NAV[1]!, NAV[2]!, { to: '/more', label: 'المزيد', icon: DotsThreeOutline }];
+const DOCK: NavItem[] = [NAV[0]!, NAV[1]!, NAV[3]!, { to: '/more', label: 'المزيد', icon: SquaresFour }];
+const GROUPS: { key: NonNullable<NavItem['group']>; label: string }[] = [
+  { key: 'main', label: 'يومي' }, { key: 'plan', label: 'تخطيط' }, { key: 'more', label: 'الحساب' },
+];
 
 export function Layout({ children }: { children: ReactNode }) {
   const { household, me } = useHousehold();
   useRealtimeSync(household.id, me.user_id);
   const unread = useUnreadCount();
   useEffect(() => setBadge(unread), [unread]);
+  const location = useLocation();
 
   const [state, setState] = useState<{ open: boolean; expense?: Expense; preset?: Partial<Expense> }>({ open: false });
   const open = useCallback((expense?: Expense, preset?: Partial<Expense>) => setState({ open: true, expense, preset }), []);
 
+  // العودة لأعلى الصفحة عند التنقل
+  useEffect(() => { window.scrollTo({ top: 0 }); }, [location.pathname]);
+
   return (
     <SheetCtx.Provider value={open}>
-      <div className="mx-auto flex min-h-dvh max-w-6xl">
+      <div className="mx-auto flex min-h-dvh max-w-[1180px]">
         {/* شريط جانبي للكمبيوتر */}
-        <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-1 overflow-y-auto border-l border-line p-4 md:flex">
-          <div className="mb-6 flex items-center gap-3 px-2 pt-2">
-            <Logo className="size-10" />
-            <div>
-              <div className="font-bold leading-tight">مصاريف البيت</div>
-              <div className="text-xs text-muted">{household.name}</div>
+        <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col overflow-y-auto px-4 pb-6 pt-7 md:flex">
+          <div className="mb-7 flex items-center gap-3 px-2">
+            <Logo className="size-9" />
+            <div className="min-w-0">
+              <div className="text-[15px] font-semibold leading-tight">مصاريف البيت</div>
+              <div className="truncate text-xs text-muted">{household.name}</div>
             </div>
           </div>
           <button onClick={() => open()}
-            className="mb-4 flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-brand font-semibold text-brand-ink shadow-sm shadow-brand/30 hover:opacity-90">
-            <Plus className="size-5" weight="bold" /> إضافة مصروف
+            className="press mb-6 flex h-11 items-center justify-center gap-2 rounded-full bg-brand text-[15px] font-medium text-brand-ink">
+            <Plus className="size-[18px]" weight="bold" /> مصروف جديد
           </button>
-          {NAV.map(({ to, label, icon: NavIcon, end }) => (
-            <NavLink key={to} to={to} end={end}
-              className={({ isActive }) => cx(
-                'flex h-11 shrink-0 items-center gap-3 rounded-xl px-3 font-medium transition',
-                isActive ? 'bg-brand-soft text-brand' : 'text-muted hover:bg-surface-2 hover:text-ink',
-              )}>
-              {({ isActive }) => (<>
-                <NavIcon className="size-5" weight={isActive ? 'fill' : 'regular'} />
-                <span className="flex-1">{label}</span>
-                {to === '/notifications' && unread > 0 && <CountBadge n={unread} />}
-              </>)}
-            </NavLink>
+          {GROUPS.map((g) => (
+            <div key={g.key} className="mb-5">
+              <p className="eyebrow mb-1.5 px-3">{g.label}</p>
+              {NAV.filter((n) => n.group === g.key).map(({ to, label, icon: NavIcon, end }) => (
+                <NavLink key={to} to={to} end={end}
+                  className={({ isActive }) => cx(
+                    'relative flex h-10 items-center gap-3 rounded-xl px-3 text-[14px] transition-colors',
+                    isActive ? 'font-medium text-ink' : 'text-muted hover:bg-surface-2 hover:text-ink',
+                  )}>
+                  {({ isActive }) => (<>
+                    {isActive && (
+                      <motion.span layoutId="side-active" className="absolute inset-0 rounded-xl bg-surface shadow-[var(--shadow-card)]"
+                        transition={{ type: 'spring', stiffness: 500, damping: 40 }} />
+                    )}
+                    <NavIcon className={cx('relative size-[19px]', isActive && 'text-brand')} weight={isActive ? 'fill' : 'regular'} />
+                    <span className="relative flex-1">{label}</span>
+                    {to === '/notifications' && unread > 0 && <span className="relative"><CountBadge n={unread} /></span>}
+                  </>)}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </aside>
 
-        <main className="pt-safe min-w-0 flex-1 px-4 pb-36 md:px-8 md:pb-12">{children}</main>
+        <main className="pt-safe min-w-0 flex-1 px-4 pb-40 md:px-10 md:pb-16">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={location.pathname}
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}>
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </main>
       </div>
 
-      {/* شريط سفلي للجوال مع زر الإضافة في المنتصف */}
-      <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-line/70 bg-surface/90 backdrop-blur-xl md:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-5 items-end px-2 pt-1.5">
-          {MOBILE.slice(0, 2).map((n) => <MobileLink key={n.to} {...n} />)}
-          <div className="flex justify-center">
-            <button onClick={() => open()} aria-label="إضافة مصروف"
-              className="-mt-6 flex size-16 items-center justify-center rounded-full bg-brand text-brand-ink shadow-lg shadow-brand/40 ring-4 ring-bg transition active:scale-90">
-              <Plus className="size-8" weight="bold" />
-            </button>
-          </div>
-          {MOBILE.slice(2).map((n) => <MobileLink key={n.to} {...n} badge={n.to === '/more' ? unread : 0} />)}
+      {/* شريط عائم للجوال: لوحة حبر مع زر الإضافة في المنتصف */}
+      <nav className="bottom-safe fixed inset-x-3 z-30 md:hidden" aria-label="التنقل">
+        <div className="mx-auto flex max-w-md items-center rounded-[26px] bg-panel p-1.5 shadow-[var(--shadow-dock)]">
+          {DOCK.slice(0, 2).map((n) => <DockLink key={n.to} {...n} />)}
+          <button onClick={() => open()} aria-label="إضافة مصروف"
+            className="press mx-1 flex size-[52px] shrink-0 items-center justify-center rounded-[20px] bg-brand text-brand-ink">
+            <Plus className="size-6" weight="bold" />
+          </button>
+          {DOCK.slice(2).map((n) => <DockLink key={n.to} {...n} badge={n.to === '/more' ? unread : 0} />)}
         </div>
       </nav>
 
@@ -104,19 +127,24 @@ export function Layout({ children }: { children: ReactNode }) {
 
 export function CountBadge({ n }: { n: number }) {
   return (
-    <span className="num inline-flex min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[11px] font-bold leading-5 text-white">
+    <span className="num inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white">
       {n > 99 ? '99+' : n}
     </span>
   );
 }
 
-function MobileLink({ to, label, icon: NavIcon, end, badge = 0 }: NavItem & { badge?: number }) {
+function DockLink({ to, label, icon: NavIcon, end, badge = 0 }: NavItem & { badge?: number }) {
   return (
-    <NavLink to={to} end={end}
-      className={({ isActive }) => cx('relative flex flex-col items-center gap-0.5 py-1.5 text-[11px] font-semibold transition', isActive ? 'text-brand' : 'text-muted')}>
+    <NavLink to={to} end={end} className="relative flex h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-[20px]">
       {({ isActive }) => (<>
-        <NavIcon className="size-6" weight={isActive ? 'fill' : 'regular'} />{label}
-        {badge > 0 && <span className="absolute end-[22%] top-0.5"><CountBadge n={badge} /></span>}
+        {isActive && (
+          <motion.span layoutId="dock-active" className="absolute inset-0 rounded-[20px] bg-white/[.08]"
+            transition={{ type: 'spring', stiffness: 500, damping: 40 }} />
+        )}
+        <NavIcon className={cx('relative size-[22px] transition-colors', isActive ? 'text-brand-bright' : 'text-panel-muted')}
+          weight={isActive ? 'fill' : 'regular'} />
+        <span className={cx('relative text-[10px] font-medium transition-colors', isActive ? 'text-panel-ink' : 'text-panel-muted')}>{label}</span>
+        {badge > 0 && <span className="absolute end-[18%] top-1"><CountBadge n={badge} /></span>}
       </>)}
     </NavLink>
   );

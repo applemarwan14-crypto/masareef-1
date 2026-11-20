@@ -8,7 +8,8 @@ import { addDays, formatDayLabel, todayISO } from '../lib/dates';
 import { CARD_TYPES, CURRENCIES, PAYMENT_METHODS, countryName, flag } from '../lib/labels';
 import { formatAmount, formatSAR, parseAmount, toInputValue } from '../lib/money';
 import type { Expense } from '../lib/types';
-import { Button, CategoryIcon, ConfirmButton, Select, Sheet, cx } from './ui';
+import { Riyal } from './Riyal';
+import { Button, CategoryIcon, ConfirmButton, Money, Select, Sheet, Toggle, cx, fieldClass } from './ui';
 
 export function ExpenseSheet({ open, onOpenChange, expense, preset }: {
   open: boolean; onOpenChange: (o: boolean) => void; expense?: Expense; preset?: Partial<Expense>;
@@ -121,7 +122,7 @@ function ExpenseForm({ expense, preset, onDone }: { expense?: Expense; preset?: 
   }
 
   const dateChips = [today, addDays(today, -1)];
-  const inputClass = 'h-12 min-w-0 flex-1 rounded-2xl border border-line bg-surface px-4 text-base outline-none focus:border-brand focus:ring-4 focus:ring-brand/10';
+  const inputClass = cx(fieldClass, 'min-w-0 flex-1 bg-surface shadow-[var(--shadow-card)]');
 
   return (
     <form onSubmit={submit} className="space-y-5 pb-2">
@@ -130,8 +131,9 @@ function ExpenseForm({ expense, preset, onDone }: { expense?: Expense; preset?: 
       )}
 
       {/* المبلغ: أكبر عنصر في الشاشة لأنه أول ما يُكتب */}
-      <div className="rounded-3xl bg-surface-2 px-4 py-5 text-center">
-        <label className="flex items-baseline justify-center gap-2" dir="ltr">
+      <div className="relative overflow-hidden rounded-[28px] bg-surface px-4 pb-5 pt-6 text-center shadow-[var(--shadow-card)]">
+        <span className="eyebrow">{foreign ? `المبلغ بـ ${currency}` : 'المبلغ'}</span>
+        <label className="mt-1 flex items-center justify-center gap-3" dir="ltr">
           <span className="sr-only">المبلغ</span>
           <input
             autoFocus={!expense}
@@ -142,20 +144,21 @@ function ExpenseForm({ expense, preset, onDone }: { expense?: Expense; preset?: 
             disabled={readOnly}
             onChange={(e) => setAmountText(e.target.value)}
             className={cx(
-              'num w-full max-w-[12ch] bg-transparent text-center text-5xl font-bold tracking-tight outline-none placeholder:text-line',
+              'num display w-full min-w-0 max-w-[8ch] bg-transparent text-center text-[52px] outline-none placeholder:text-line-strong focus-visible:outline-none',
               touched && !amount && 'text-danger',
             )}
           />
-          {expense ? <span className="text-lg font-semibold text-muted">ر.س</span> : (
+          {expense || !foreign ? <Riyal className="h-8 w-auto shrink-0 text-muted order-first" /> : null}
+          {!expense && (
             <select aria-label="العملة" value={currency} onChange={(e) => setCurrency(e.target.value)}
-              className="rounded-xl bg-transparent text-lg font-semibold text-muted outline-none">
-              {CURRENCIES.map((c) => <option key={c} value={c}>{c === 'SAR' ? 'ر.س' : c}</option>)}
+              className="h-9 rounded-full bg-surface-2 px-3 text-[13px] font-medium text-ink-2 outline-none">
+              {CURRENCIES.map((c) => <option key={c} value={c}>{c === 'SAR' ? 'ريال' : c}</option>)}
             </select>
           )}
         </label>
         {foreign && (
           <p className="mt-2 text-sm text-muted">
-            {rate ? <>≈ <span className="num font-semibold text-ink">{amount ? formatSAR(amount) : '—'}</span>
+            {rate ? <>≈ {amount ? <Money value={amount} className="font-semibold text-ink" /> : '—'}
               {' '}بسعر اليوم (<span className="num" dir="ltr">1 {currency} = {rate.toFixed(rate < 0.1 ? 4 : 2)}</span>)
               {card?.intl_fee_bps ? ` + رسوم البطاقة ${card.intl_fee_bps / 100}%` : ''}</> : 'جارٍ جلب سعر الصرف…'}
           </p>
@@ -164,19 +167,19 @@ function ExpenseForm({ expense, preset, onDone }: { expense?: Expense; preset?: 
           <p className="mt-2 text-sm text-muted">
             <CurrencyCircleDollar className="me-1 inline size-4" />
             <span className="num">{formatAmount(expense.original_amount!)} {expense.original_currency}</span>
-            {expense.fee_amount ? <> + رسوم <span className="num">{formatSAR(expense.fee_amount)}</span></> : null}
+            {expense.fee_amount ? <> + رسوم <Money value={expense.fee_amount} /></> : null}
           </p>
         )}
       </div>
 
       <fieldset disabled={readOnly}>
-        <legend className="mb-2 text-sm font-medium text-muted">التصنيف</legend>
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <legend className="mb-2.5 text-[13px] font-medium text-ink-2">التصنيف</legend>
+        <div className="grid grid-cols-4 gap-2">
           {visible.map((c) => (
             <button key={c.id} type="button" onClick={() => setCategoryId(c.id)} aria-pressed={categoryId === c.id}
               className={cx(
-                'flex flex-col items-center gap-1.5 rounded-2xl border-2 px-1 py-2.5 text-center text-xs font-semibold leading-tight transition active:scale-95',
-                categoryId === c.id ? 'border-brand bg-brand-soft text-brand' : 'border-transparent bg-surface-2 hover:border-line',
+                'press relative flex min-w-0 flex-col items-center gap-1.5 rounded-[18px] px-1 pb-2 pt-2.5 text-center text-[11px] font-medium leading-tight [overflow-wrap:anywhere]',
+                categoryId === c.id ? 'bg-surface text-ink shadow-[var(--shadow-lift)] ring-2 ring-brand' : 'bg-surface/60 text-ink-2',
               )}>
               <CategoryIcon category={c} size="sm" />
               <span className="line-clamp-2">{c.name}</span>
@@ -188,20 +191,20 @@ function ExpenseForm({ expense, preset, onDone }: { expense?: Expense; preset?: 
       <div className="flex flex-wrap items-center gap-2">
         {dateChips.map((d) => (
           <button key={d} type="button" disabled={readOnly} onClick={() => setDate(d)}
-            className={cx('h-10 rounded-full px-4 text-sm font-semibold transition', date === d ? 'bg-ink text-bg' : 'bg-surface-2')}>
+            className={cx('press h-10 rounded-full px-4 text-[13px] font-medium', date === d ? 'bg-panel text-panel-ink' : 'bg-surface text-ink-2 shadow-[var(--shadow-card)]')}>
             {formatDayLabel(d, today)}
           </button>
         ))}
         <label className="relative">
           <span className="sr-only">تاريخ آخر</span>
           <input type="date" value={date} max={today} disabled={readOnly} onChange={(e) => e.target.value && setDate(e.target.value)}
-            className={cx('h-10 rounded-full px-4 text-base', !dateChips.includes(date) ? 'bg-ink text-bg' : 'bg-surface-2')} />
+            className={cx('h-10 rounded-full px-4 text-base', !dateChips.includes(date) ? 'bg-panel text-panel-ink' : 'bg-surface text-ink-2 shadow-[var(--shadow-card)]')} />
         </label>
       </div>
 
       {(expense?.merchant || expense?.source === 'sms') && (
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-muted">المتجر</span>
+          <span className="mb-1.5 block text-[13px] font-medium text-ink-2">المتجر</span>
           <input value={merchant} onChange={(e) => setMerchant(e.target.value)} maxLength={80} disabled={readOnly} className={cx(inputClass, 'w-full')} />
         </label>
       )}
@@ -217,7 +220,7 @@ function ExpenseForm({ expense, preset, onDone }: { expense?: Expense; preset?: 
         />
         <button type="button" onClick={() => fileRef.current?.click()} disabled={readOnly}
           aria-label={receipt ? 'تم إرفاق الفاتورة' : 'إرفاق صورة الفاتورة'}
-          className={cx('flex size-12 shrink-0 items-center justify-center rounded-2xl', receipt ? 'bg-brand-soft text-brand' : 'bg-surface-2 text-muted')}>
+          className={cx('press flex size-12 shrink-0 items-center justify-center rounded-2xl', receipt ? 'bg-brand-soft text-brand' : 'bg-surface text-muted shadow-[var(--shadow-card)]')}>
           {receipt ? <CheckCircle className="size-6" weight="fill" /> : <Camera className="size-6" weight="duotone" />}
         </button>
         <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden"
@@ -240,7 +243,7 @@ function ExpenseForm({ expense, preset, onDone }: { expense?: Expense; preset?: 
       )}
 
       {!expense && amount !== null && amount >= 30000 && (
-        <label className="flex items-center justify-between gap-3 rounded-2xl bg-surface-2 px-4 py-3">
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-surface p-4 shadow-[var(--shadow-card)]">
           <span className="flex items-center gap-3">
             <ShieldCheck className="size-6 text-brand" weight="duotone" />
             <span>
@@ -248,8 +251,8 @@ function ExpenseForm({ expense, preset, onDone }: { expense?: Expense; preset?: 
               <span className="text-xs text-muted">نسجّل له ضمان سنتين وننبهك قبل ما ينتهي</span>
             </span>
           </span>
-          <input type="checkbox" checked={device} onChange={(e) => setDevice(e.target.checked)} className="size-5 accent-[var(--color-brand)]" />
-        </label>
+          <Toggle checked={device} onChange={setDevice} label="جهاز" />
+        </div>
       )}
 
       {expense && (
@@ -270,8 +273,8 @@ function ExpenseForm({ expense, preset, onDone }: { expense?: Expense; preset?: 
 
       {!readOnly && (
         <div className="flex gap-2">
-          <Button type="submit" loading={save.isPending} className="flex-1">
-            {expense ? 'حفظ التعديل' : amount ? `إضافة ${formatSAR(amount)}` : 'إضافة'}
+          <Button type="submit" variant="brand" loading={save.isPending} className="h-14 flex-1 text-base">
+            {expense ? 'حفظ التعديل' : amount ? <>إضافة <Money value={amount} /></> : 'إضافة'}
           </Button>
           {expense && (
             <ConfirmButton loading={remove.isPending} confirmText="تأكيد الحذف"
