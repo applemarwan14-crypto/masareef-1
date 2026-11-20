@@ -144,7 +144,7 @@ function ExpenseForm({ expense, preset, onDone }: { expense?: Expense; preset?: 
             disabled={readOnly}
             onChange={(e) => setAmountText(e.target.value)}
             className={cx(
-              'num display w-full max-w-[9ch] bg-transparent text-center text-[52px] outline-none placeholder:text-line-strong',
+              'num display w-full min-w-0 max-w-[8ch] bg-transparent text-center text-[52px] outline-none placeholder:text-line-strong focus-visible:outline-none',
               touched && !amount && 'text-danger',
             )}
           />
@@ -178,7 +178,7 @@ function ExpenseForm({ expense, preset, onDone }: { expense?: Expense; preset?: 
           {visible.map((c) => (
             <button key={c.id} type="button" onClick={() => setCategoryId(c.id)} aria-pressed={categoryId === c.id}
               className={cx(
-                'press relative flex flex-col items-center gap-1.5 rounded-[18px] px-1 pb-2 pt-2.5 text-center text-[11px] font-medium leading-tight',
+                'press relative flex min-w-0 flex-col items-center gap-1.5 rounded-[18px] px-1 pb-2 pt-2.5 text-center text-[11px] font-medium leading-tight [overflow-wrap:anywhere]',
                 categoryId === c.id ? 'bg-surface text-ink shadow-[var(--shadow-lift)] ring-2 ring-brand' : 'bg-surface/60 text-ink-2',
               )}>
               <CategoryIcon category={c} size="sm" />

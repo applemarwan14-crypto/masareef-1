@@ -58,7 +58,7 @@ export default function Expenses() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="العمليات" subtitle={periodLabel}
+      <PageHeader title="العمليات" subtitle={custom ? periodLabel : undefined}
         actions={<>
           {!custom && <MonthSwitcher month={month} onChange={setMonth} />}
           <IconButton label={custom ? 'العودة للعرض الشهري' : 'نطاق تاريخ مخصص'}

@@ -78,12 +78,12 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr] lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.15fr_1fr] lg:items-start [&>*]:min-w-0">
         <div className="space-y-6">
           {/* لوحة الحبر: مصروف الشهر والميزانية */}
           <section className="panel p-6 shadow-[var(--shadow-dock)]">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[13px] text-panel-muted">مصروف {formatMonth(month)}</p>
+              <p className="text-[13px] text-panel-muted">{isCurrent ? 'مصروف الشهر' : 'مصروف'}</p>
               <MonthSwitcher month={month} onChange={setMonth} tone="panel" />
             </div>
 
@@ -192,8 +192,8 @@ export default function Dashboard() {
 
         <div className="space-y-6">
           {/* قراءة الشهر */}
-          <Link to="/insights" className="press surface group relative flex items-center gap-4 overflow-hidden p-5">
-            <span className="absolute -start-6 -top-6 size-24 rounded-full bg-gold/15" />
+          <Link to="/insights" className="press surface group relative flex items-center gap-4 overflow-hidden p-5 [contain:paint]">
+            <span className="absolute -top-10 start-3 size-24 rounded-full bg-gold/15" />
             <span className="relative flex size-11 items-center justify-center rounded-[14px] bg-panel text-gold">
               <Sparkle className="size-[22px]" weight="fill" />
             </span>

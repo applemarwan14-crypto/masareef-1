@@ -79,7 +79,12 @@
   }
 }
 
-html, body, #root { min-height: 100%; }
+/* داخل طبقات Tailwind حتى تتغلب الأدوات (utilities) على هذه الأنماط عند الحاجة */
+@layer base {
+  html, body, #root { min-height: 100%; }
+}
+
+@layer components {
 body {
   background: var(--color-bg);
   color: var(--color-ink);
@@ -151,6 +156,8 @@ button, nav { -webkit-user-select: none; user-select: none; -webkit-touch-callou
 
 input[type="date"]::-webkit-calendar-picker-indicator { opacity: .5; }
 ::selection { background: color-mix(in srgb, var(--color-brand) 25%, transparent); }
+
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }

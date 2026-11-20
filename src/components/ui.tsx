@@ -319,7 +319,7 @@ export function Sheet({ open, onOpenChange, title, children }: {
           <div className="mx-auto mt-2.5 h-1 w-9 shrink-0 rounded-full bg-line-strong md:hidden" />
           <Drawer.Title className="px-6 pt-4 text-[19px] font-semibold">{title}</Drawer.Title>
           <Drawer.Description className="sr-only">{title}</Drawer.Description>
-          <div className="overflow-y-auto px-6 pb-safe pt-4">{children}</div>
+          <div className="overflow-y-auto overflow-x-hidden px-5 pb-safe pt-4">{children}</div>
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>
@@ -362,7 +362,7 @@ export function Card({ className, children }: { className?: string; children: Re
 
 /** مجموعة صفوف داخل بطاقة واحدة مع فواصل رفيعة (مثل إعدادات iOS لكن أهدأ) */
 export function ListGroup({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx('surface divide-y divide-line overflow-hidden', className)}>{children}</div>;
+  return <div className={cx('surface overflow-hidden', className)}>{children}</div>;
 }
 
 type Tone = 'brand' | 'warn' | 'danger' | 'neutral' | 'gold';
