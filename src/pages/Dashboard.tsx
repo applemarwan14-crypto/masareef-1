@@ -1,17 +1,24 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
-import { AirplaneTilt, Alarm, Bell, CaretLeft, ChartPieSlice, Receipt, Sparkle, Target, TrendDown, TrendUp } from '@phosphor-icons/react';
-import { CategoryDonut, MonthlyBars } from '../components/Charts';
+import { AirplaneTilt, Alarm, ArrowDownRight, ArrowUpRight, Bell, CalendarCheck, CaretLeft, Receipt, Sparkle, Target } from '@phosphor-icons/react';
+import { CategoryBreakdown, MonthlyBars, SpectrumBar } from '../components/Charts';
 import { ExpenseRow } from '../components/ExpenseList';
 import { CountBadge, useExpenseSheet } from '../components/Layout';
 import { Logo } from '../components/Logo';
-import { AnimatedAmount, Button, Card, CategoryIcon, EmptyState, MonthSwitcher, SectionTitle, Spinner, cx } from '../components/ui';
+import {
+  AnimatedAmount, Button, Callout, EmptyState, ListGroup, Meter, Money, MonthSwitcher, SectionTitle, Skeleton, SkeletonRows,
+  Stagger, StaggerItem, cx,
+} from '../components/ui';
 import { useHousehold } from '../hooks/household';
-import { useCategories, useMonthExpenses, useMonthlyTotals, useRecurring, useRecurringPayments, useRenewals, useTrips, useUnreadCount } from '../hooks/queries';
-import { addDays, addMonths, formatDayShort, formatMonth, lastMonths, monthOf, todayISO } from '../lib/dates';
-import { formatSAR, sumHalalas } from '../lib/money';
+import {
+  useCategories, useMonthExpenses, useMonthlyTotals, useRecurring, useRecurringPayments, useRenewals, useTrips, useUnreadCount,
+} from '../hooks/queries';
+import { addDays, addMonths, daysInMonth, formatDayShort, formatMonth, lastMonths, monthOf, todayISO } from '../lib/dates';
+import { sumHalalas } from '../lib/money';
 import { recurringForMonth } from '../lib/recurring';
 import { budgetStatus, byCategory, changeRatio, monthlySeries } from '../lib/stats';
+
+const dayFmt = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Riyadh' });
 
 export default function Dashboard() {
   const today = todayISO();
@@ -24,10 +31,10 @@ export default function Dashboard() {
   const monthly = useMonthlyTotals(monthOf(today), 6);
   const recurring = useRecurring();
   const payments = useRecurringPayments(month);
-
   const { data: trips = [] } = useTrips();
   const { data: renewals = [] } = useRenewals();
   const unread = useUnreadCount();
+
   const openTrip = trips.find((t) => t.status === 'open');
   const soonRenewals = renewals.filter((r) => r.status === 'active' && r.due_date >= today && r.due_date <= addDays(today, r.remind_days));
 
@@ -42,184 +49,190 @@ export default function Dashboard() {
   const change = changeRatio(total, previous);
   const budget = budgetStatus(total, household.monthly_budget, month, today);
   const unpaid = recurringForMonth(recurring.data ?? [], payments.data ?? [], month, today).filter((r) => r.status !== 'paid');
+  const isCurrent = month === monthOf(today);
+  const daysCounted = isCurrent ? Number(today.slice(8, 10)) : daysInMonth(month);
+  const perDay = daysCounted ? Math.round(total / daysCounted) : 0;
+  const initials = me.display_name.trim().slice(0, 1);
 
   return (
-    <div className="space-y-5 pt-4">
-      <header className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5">
+    <div className="space-y-6 pt-5">
+      {/* رأس الصفحة: التحية والتاريخ والإشعارات */}
+      <header className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
           <Logo className="size-10 md:hidden" />
           <div>
-            <p className="text-xs text-muted">أهلاً</p>
-            <p className="font-bold leading-tight">{me.display_name}</p>
+            <p className="text-xs text-muted">{dayFmt.format(new Date())}</p>
+            <p className="text-[19px] font-semibold leading-tight">أهلاً {me.display_name}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <Link to="/notifications" aria-label="الإشعارات"
-            className="relative flex size-10 items-center justify-center rounded-full bg-surface text-muted shadow-sm">
+            className="press relative flex size-11 items-center justify-center rounded-full bg-surface text-ink-2 shadow-[var(--shadow-card)]">
             <Bell className="size-5" weight={unread ? 'fill' : 'regular'} />
-            {unread > 0 && <span className="absolute -end-1 -top-1"><CountBadge n={unread} /></span>}
+            {unread > 0 && <span className="absolute -end-0.5 -top-0.5"><CountBadge n={unread} /></span>}
           </Link>
-          <MonthSwitcher month={month} onChange={setMonth} />
+          <Link to="/settings" aria-label="الإعدادات"
+            className="press flex size-11 items-center justify-center rounded-full bg-brand-soft text-[15px] font-semibold text-brand">
+            {initials}
+          </Link>
         </div>
       </header>
 
-      {openTrip && (
-        <Link to={`/trips/${openTrip.id}`}
-          className="flex items-center gap-3 rounded-card bg-brand-soft px-4 py-3.5 text-sm transition active:opacity-80">
-          <span className="flex size-10 items-center justify-center rounded-2xl bg-brand/15 text-brand">
-            <AirplaneTilt className="size-6" weight="duotone" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-semibold">{openTrip.name}</span>
-            <span className="text-xs text-muted">رحلة مفتوحة منذ {formatDayShort(openTrip.started_on)}، مصاريفها خارج مصروف الشهر</span>
-          </span>
-          <CaretLeft className="size-4 text-muted" weight="bold" />
-        </Link>
-      )}
+      <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr] lg:items-start">
+        <div className="space-y-6">
+          {/* لوحة الحبر: مصروف الشهر والميزانية */}
+          <section className="panel p-6 shadow-[var(--shadow-dock)]">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[13px] text-panel-muted">مصروف {formatMonth(month)}</p>
+              <MonthSwitcher month={month} onChange={setMonth} tone="panel" />
+            </div>
 
-      {/* البطاقة الرئيسية: إجمالي الشهر والميزانية */}
-      <section className="hero relative overflow-hidden rounded-card p-5 shadow-lg shadow-brand/20">
-        <div className="pointer-events-none absolute -left-10 -top-16 size-48 rounded-full bg-white/5" />
-        <div className="pointer-events-none absolute -bottom-20 left-16 size-40 rounded-full bg-white/5" />
+            {expenses.isPending ? <Skeleton className="mt-4 h-12 w-48 bg-white/10" /> : (
+              <AnimatedAmount value={total} className="display mt-4 text-[44px] md:text-[52px]" />
+            )}
 
-        <div className="relative">
-          <p className="text-sm text-white/75">مصروف {formatMonth(month)}</p>
-          <AnimatedAmount value={total} className="mt-1 block text-4xl font-bold tracking-tight md:text-5xl" />
-          {change !== null && (
-            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/12 px-2.5 py-1 text-xs font-medium">
-              {change > 0 ? <TrendUp className="size-4" weight="bold" /> : <TrendDown className="size-4" weight="bold" />}
-              {change > 0 ? 'أكثر' : 'أقل'} من الشهر السابق بـ {Math.abs(Math.round(change * 100))}%
-            </p>
-          )}
-
-          {budget.level === 'none' ? (
-            <Link to="/settings"
-              className="mt-5 flex items-center gap-2 rounded-2xl bg-white/12 px-4 py-3 text-sm font-medium transition active:bg-white/20">
-              <Target className="size-5" weight="duotone" />
-              <span className="flex-1">حدّد ميزانية شهرية لمتابعة المتبقي</span>
-              <CaretLeft className="size-4" weight="bold" />
-            </Link>
-          ) : (
-            <div className="mt-5">
-              <div className="mb-2 flex items-end justify-between gap-3">
-                <div>
-                  <p className="text-xs text-white/70">{budget.remaining! >= 0 ? 'المتبقي' : 'تجاوزتم الميزانية بـ'}</p>
-                  <p className={cx('num text-xl font-bold', budget.level === 'over' && 'text-[#FFC9C2]')}>
-                    {formatSAR(Math.abs(budget.remaining!))}
-                  </p>
-                </div>
-                <p className="text-xs text-white/70">من <span className="num">{formatSAR(budget.budget!)}</span></p>
-              </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-white/15" role="progressbar"
-                aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(Math.min(budget.ratio, 1) * 100)}>
-                <div
-                  className={cx('h-full rounded-full transition-[width] duration-700',
-                    budget.level === 'over' ? 'bg-[#FF8A7A]' : budget.level === 'warn' ? 'bg-gold' : 'bg-white')}
-                  style={{ width: `${Math.min(budget.ratio, 1) * 100}%` }}
-                />
-              </div>
-              {budget.dailyAllowance !== null && (
-                <p className="mt-2.5 text-xs text-white/80">
-                  تقدرون تصرفون <span className="num font-semibold text-white">{formatSAR(budget.dailyAllowance)}</span> يومياً حتى آخر الشهر
-                </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+              {change !== null && (
+                <span className={cx('inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium',
+                  change > 0 ? 'bg-gold/15 text-gold' : 'bg-brand-bright/15 text-brand-bright')}>
+                  {change > 0 ? <ArrowUpRight className="size-3.5" weight="bold" /> : <ArrowDownRight className="size-3.5" weight="bold" />}
+                  {Math.abs(Math.round(change * 100))}% {change > 0 ? 'أكثر' : 'أقل'} من الشهر السابق
+                </span>
               )}
+              <span className="rounded-full bg-white/[.07] px-2.5 py-1 text-panel-muted">{list.length} عملية</span>
               {tripTotal > 0 && (
-                <p className="mt-1.5 text-xs text-white/70">+ <span className="num">{formatSAR(tripTotal)}</span> مصاريف رحلات (خارج الميزانية)</p>
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/[.07] px-2.5 py-1 text-panel-muted">
+                  <AirplaneTilt className="size-3.5" /> <Money value={tripTotal} /> خارج الميزانية
+                </span>
               )}
             </div>
+
+            {budget.level === 'none' ? (
+              <Link to="/settings" className="press mt-6 flex items-center gap-3 rounded-2xl bg-white/[.06] px-4 py-3.5 text-sm">
+                <Target className="size-5 text-brand-bright" weight="duotone" />
+                <span className="flex-1">حدّد ميزانية شهرية لتتابع المتبقي</span>
+                <CaretLeft className="size-4 text-panel-muted" weight="bold" />
+              </Link>
+            ) : (
+              <div className="mt-6">
+                <Meter ratio={budget.ratio} segments={32} track="bg-white/10"
+                  tone={budget.level === 'over' ? 'danger' : budget.level === 'warn' ? 'warn' : 'panel'} />
+                <div className="mt-4 grid grid-cols-3 divide-x divide-x-reverse divide-white/10 text-center">
+                  <PanelStat label={budget.remaining! >= 0 ? 'المتبقي' : 'تجاوز'}
+                    value={<Money value={Math.abs(budget.remaining!)} decimals="never" className={budget.level === 'over' ? 'text-danger' : ''} />} />
+                  <PanelStat label="يومياً متاح" value={budget.dailyAllowance !== null ? <Money value={budget.dailyAllowance} decimals="never" /> : '—'} />
+                  <PanelStat label="الميزانية" value={<Money value={budget.budget!} decimals="never" />} />
+                </div>
+              </div>
+            )}
+            {budget.level === 'none' && (
+              <div className="mt-4 grid grid-cols-2 divide-x divide-x-reverse divide-white/10 text-center">
+                <PanelStat label="متوسط اليوم" value={<Money value={perDay} decimals="never" />} />
+                <PanelStat label="أكثر تصنيف" value={slices[0]?.category?.name ?? '—'} />
+              </div>
+            )}
+          </section>
+
+          {/* تنبيهات تحتاج انتباهك */}
+          {(unpaid.length > 0 || openTrip || soonRenewals.length > 0) && (
+            <Stagger className="space-y-2.5">
+              {unpaid.length > 0 && (
+                <StaggerItem>
+                  <Link to="/recurring" className="press block">
+                    <Callout icon={Alarm} tone="warn"
+                      title={unpaid.length === 1 ? 'مصروف ثابت واحد لم يُدفع' : `${unpaid.length} مصاريف ثابتة لم تُدفع`}
+                      trailing={<Money value={sumHalalas(unpaid.map((u) => u.item.amount))} className="text-[15px] font-semibold" />}>
+                      {unpaid.slice(0, 3).map((u) => u.item.name).join('، ')}
+                    </Callout>
+                  </Link>
+                </StaggerItem>
+              )}
+              {openTrip && (
+                <StaggerItem>
+                  <Link to={`/trips/${openTrip.id}`} className="press block">
+                    <Callout icon={AirplaneTilt} tone="brand" title={openTrip.name}
+                      trailing={<CaretLeft className="size-4 text-muted" weight="bold" />}>
+                      رحلة مفتوحة منذ {formatDayShort(openTrip.started_on)}، مصاريفها خارج الشهر
+                    </Callout>
+                  </Link>
+                </StaggerItem>
+              )}
+              {soonRenewals.length > 0 && (
+                <StaggerItem>
+                  <Link to="/renewals" className="press block">
+                    <Callout icon={CalendarCheck} tone="gold" title={soonRenewals.map((r) => r.title).join('، ')}
+                      trailing={<CaretLeft className="size-4 text-muted" weight="bold" />}>
+                      أقرب موعد {formatDayShort(soonRenewals[0]!.due_date)}
+                    </Callout>
+                  </Link>
+                </StaggerItem>
+              )}
+            </Stagger>
+          )}
+
+          {/* وين راحت الفلوس */}
+          {expenses.isPending ? <SkeletonRows rows={4} /> : list.length === 0 ? (
+            <div className="surface">
+              <EmptyState icon={Receipt} title={`لا توجد مصروفات في ${formatMonth(month)}`}>
+                سجّل أول مصروف، وتظهر هنا الإحصائيات.
+                <div className="mt-5"><Button variant="brand" onClick={() => openSheet()}>إضافة مصروف</Button></div>
+              </EmptyState>
+            </div>
+          ) : (
+            <section className="surface p-5">
+              <SectionTitle hint={`${slices.length} تصنيفات هذا الشهر`}
+                action={<Link to="/expenses" className="text-[13px] font-medium text-brand">التفاصيل</Link>}>
+                وين راحت الفلوس
+              </SectionTitle>
+              <SpectrumBar slices={slices} className="mb-4" />
+              <CategoryBreakdown slices={slices} limit={6} />
+            </section>
           )}
         </div>
-      </section>
 
-      {unpaid.length > 0 && (
-        <Link to="/recurring"
-          className="flex items-center gap-3 rounded-card bg-warn-soft px-4 py-3.5 text-sm transition active:opacity-80">
-          <span className="flex size-10 items-center justify-center rounded-2xl bg-warn/15 text-warn">
-            <Alarm className="size-6" weight="duotone" />
-          </span>
-          <span className="flex-1 font-medium">
-            {unpaid.length === 1 ? 'مصروف ثابت واحد لم يُدفع' : `${unpaid.length} مصاريف ثابتة لم تُدفع`}
-          </span>
-          <span className="num font-bold">{formatSAR(sumHalalas(unpaid.map((u) => u.item.amount)))}</span>
-          <CaretLeft className="size-4 text-muted" weight="bold" />
-        </Link>
-      )}
+        <div className="space-y-6">
+          {/* قراءة الشهر */}
+          <Link to="/insights" className="press surface group relative flex items-center gap-4 overflow-hidden p-5">
+            <span className="absolute -start-6 -top-6 size-24 rounded-full bg-gold/15" />
+            <span className="relative flex size-11 items-center justify-center rounded-[14px] bg-panel text-gold">
+              <Sparkle className="size-[22px]" weight="fill" />
+            </span>
+            <span className="relative flex-1">
+              <span className="block text-[15px] font-semibold">قراءة الشهر</span>
+              <span className="mt-0.5 block text-xs leading-relaxed text-muted">متى تصرف أكثر، المتكرر، والأعلى من المعتاد</span>
+            </span>
+            <CaretLeft className="relative size-4 text-muted transition-transform group-hover:-translate-x-1" weight="bold" />
+          </Link>
 
-      {soonRenewals.length > 0 && (
-        <Link to="/renewals"
-          className="flex items-center gap-3 rounded-card bg-surface px-4 py-3.5 text-sm shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition active:opacity-80">
-          <span className="flex size-10 items-center justify-center rounded-2xl bg-warn/15 text-warn">
-            <Alarm className="size-6" weight="duotone" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate font-medium">{soonRenewals.map((r) => r.title).join('، ')}</span>
-            <span className="text-xs text-muted">أقرب موعد {formatDayShort(soonRenewals[0]!.due_date)}</span>
-          </span>
-          <CaretLeft className="size-4 text-muted" weight="bold" />
-        </Link>
-      )}
+          <section className="surface p-5">
+            <SectionTitle hint="اضغط على شهر لعرضه">آخر 6 أشهر</SectionTitle>
+            <MonthlyBars data={series} selected={month} onSelect={setMonth} />
+          </section>
 
-      {expenses.isPending ? <Spinner /> : list.length === 0 ? (
-        <EmptyState icon={Receipt} title={`لا توجد مصروفات في ${formatMonth(month)}`}>
-          سجّلوا أول مصروف، وستظهر هنا الإحصائيات والرسوم.
-          <div className="mt-4"><Button onClick={() => openSheet()}>إضافة مصروف</Button></div>
-        </EmptyState>
-      ) : (
-        <div className="grid gap-5 lg:grid-cols-2">
-          <Card>
-            <SectionTitle><span className="inline-flex items-center gap-2"><ChartPieSlice className="size-5 text-brand" weight="duotone" />حسب التصنيف</span></SectionTitle>
-            <CategoryDonut slices={slices} total={total} />
-            <ul className="mt-5 space-y-3.5">
-              {slices.map((s) => (
-                <li key={s.categoryId} className="flex items-center gap-3">
-                  <CategoryIcon category={s.category} size="sm" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex justify-between gap-2 text-sm">
-                      <span className="truncate font-semibold">{s.category?.name ?? '—'}</span>
-                      <span className="num shrink-0 font-bold">{formatSAR(s.total)}</span>
-                    </div>
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
-                        <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${s.percent}%`, background: s.category?.color }} />
-                      </div>
-                      <span className="num w-9 text-end text-xs text-muted">{s.percent}%</span>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Card>
-
-          <div className="space-y-5">
-            <Link to="/insights" className="flex items-center gap-3 rounded-card bg-surface p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition active:opacity-80">
-              <span className="flex size-10 items-center justify-center rounded-2xl bg-brand-soft text-brand">
-                <Sparkle className="size-6" weight="duotone" />
-              </span>
-              <span className="flex-1">
-                <span className="block font-semibold">قراءة الشهر</span>
-                <span className="text-xs text-muted">متى تصرفون أكثر، المدفوعات المتكررة، والأعلى من المعتاد</span>
-              </span>
-              <CaretLeft className="size-4 text-muted" weight="bold" />
-            </Link>
-            <Card>
-              <SectionTitle>آخر 6 أشهر</SectionTitle>
-              <MonthlyBars data={series} selected={month} onSelect={setMonth} />
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between px-2 pb-1 pt-2">
-                <h2 className="font-bold">أحدث العمليات</h2>
-                <Link to="/expenses" className="inline-flex items-center gap-0.5 text-sm font-semibold text-brand">
-                  الكل <CaretLeft className="size-4" weight="bold" />
-                </Link>
-              </div>
-              {all.slice(0, 6).map((e) => (
-                <ExpenseRow key={e.id} expense={e} category={categories.find((c) => c.id === e.category_id)}
-                  tripName={trips.find((t) => t.id === e.trip_id)?.name} />
-              ))}
-            </Card>
-          </div>
+          {list.length > 0 && (
+            <section>
+              <SectionTitle action={<Link to="/expenses" className="inline-flex items-center gap-0.5 text-[13px] font-medium text-brand">الكل <CaretLeft className="size-3.5" weight="bold" /></Link>}>
+                أحدث العمليات
+              </SectionTitle>
+              <ListGroup className="p-1.5">
+                {all.slice(0, 6).map((e) => (
+                  <ExpenseRow key={e.id} expense={e} category={categories.find((c) => c.id === e.category_id)}
+                    tripName={trips.find((t) => t.id === e.trip_id)?.name} />
+                ))}
+              </ListGroup>
+            </section>
+          )}
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
+
+function PanelStat({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="min-w-0 px-2">
+      <p className="text-[11px] text-panel-muted">{label}</p>
+      <p className="mt-1 truncate text-[15px] font-semibold">{value}</p>
     </div>
   );
 }

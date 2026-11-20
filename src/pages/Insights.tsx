@@ -2,13 +2,13 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowsClockwise, CalendarBlank, ChartLineUp, Lightbulb, Repeat, Sparkle, Storefront, ThumbsUp, Warning, Wallet } from '@phosphor-icons/react';
 import { useExpenseSheet } from '../components/Layout';
-import { Button, Card, EmptyState, MonthSwitcher, Spinner, cx } from '../components/ui';
+import { Button, Card, EmptyState, MonthSwitcher, Spinner, cx, Money } from '../components/ui';
 import { useHousehold } from '../hooks/household';
 import { useCategories, useExpenses, useRecurring, useSaveRecurring } from '../hooks/queries';
 import { fetchInsightNotes } from '../lib/api';
 import { addMonths, daysInMonth, formatDayShort, formatMonth, monthOf, todayISO } from '../lib/dates';
 import { WEEKDAYS, anomalies, buildFacts, habits, recurringCandidates, salaryEffect, weekdayStats } from '../lib/insights';
-import { formatSAR } from '../lib/money';
+
 
 export default function InsightsPage() {
   const today = todayISO();
@@ -45,9 +45,9 @@ export default function InsightsPage() {
   const topDay = [...week].sort((a, b) => b.avgPerDay - a.avgPerDay)[0];
 
   return (
-    <div className="space-y-4 pt-4">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">قراءات</h1>
+    <div className="space-y-5">
+      <header className="flex flex-wrap items-end justify-between gap-3 pt-5">
+        <h1 className="display text-[28px]">قراءات</h1>
         <MonthSwitcher month={month} onChange={setMonth} />
       </header>
 
@@ -57,7 +57,7 @@ export default function InsightsPage() {
         {/* ملاحظات Claude */}
         <Card className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="inline-flex items-center gap-2 font-bold"><Sparkle className="size-5 text-brand" weight="duotone" />قراءة Claude للشهر</h2>
+            <h2 className="flex items-center gap-2.5 text-[15px] font-semibold"><span className="flex size-8 items-center justify-center rounded-[10px] bg-brand-soft text-brand"><Sparkle className="size-[18px]" weight="duotone" /></span>قراءة Claude للشهر</h2>
             <button type="button" onClick={() => setRefresh((n) => n + 1)} disabled={notes.isFetching}
               className="text-muted" aria-label="قراءة جديدة"><ArrowsClockwise className={cx('size-5', notes.isFetching && 'animate-spin')} /></button>
           </div>
@@ -82,7 +82,7 @@ export default function InsightsPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           {/* أيام الأسبوع */}
           <Card>
-            <h2 className="mb-1 inline-flex items-center gap-2 font-bold"><CalendarBlank className="size-5 text-brand" weight="duotone" />متى تصرفون أكثر</h2>
+            <h2 className="mb-1 flex items-center gap-2.5 text-[15px] font-semibold"><span className="flex size-8 items-center justify-center rounded-[10px] bg-brand-soft text-brand"><CalendarBlank className="size-[18px]" weight="duotone" /></span>متى تصرفون أكثر</h2>
             <p className="mb-4 text-xs text-muted">متوسط الصرف لكل يوم، آخر 3 أشهر{topDay && ` · الأعلى ${topDay.name}`}</p>
             <div className="flex h-36 items-end gap-2" dir="rtl">
               {week.map((w) => (
@@ -100,16 +100,16 @@ export default function InsightsPage() {
 
           {/* الراتب */}
           <Card>
-            <h2 className="mb-1 inline-flex items-center gap-2 font-bold"><Wallet className="size-5 text-brand" weight="duotone" />أول الشهر بعد الراتب</h2>
+            <h2 className="mb-1 flex items-center gap-2.5 text-[15px] font-semibold"><span className="flex size-8 items-center justify-center rounded-[10px] bg-brand-soft text-brand"><Wallet className="size-[18px]" weight="duotone" /></span>أول الشهر بعد الراتب</h2>
             <p className="mb-4 text-xs text-muted">الراتب يوم {salary.salaryDay} (تغيّره من الإعدادات) · آخر {salary.cycles} رواتب</p>
             <div className="grid grid-cols-2 gap-3 text-center">
               <div className="rounded-2xl bg-surface-2 p-3">
                 <p className="text-xs text-muted">أول أسبوع (يومياً)</p>
-                <p className="num mt-1 text-lg font-bold">{formatSAR(salary.firstWeekDaily)}</p>
+                <p className="num mt-1 text-lg font-semibold"><Money value={salary.firstWeekDaily} /></p>
               </div>
               <div className="rounded-2xl bg-surface-2 p-3">
                 <p className="text-xs text-muted">باقي الشهر (يومياً)</p>
-                <p className="num mt-1 text-lg font-bold">{formatSAR(salary.restDaily)}</p>
+                <p className="num mt-1 text-lg font-semibold"><Money value={salary.restDaily} /></p>
               </div>
             </div>
             {salary.ratio !== null && (
@@ -124,7 +124,7 @@ export default function InsightsPage() {
         {/* المدفوعات المتكررة */}
         {candidates.length > 0 && (
           <Card className="p-3">
-            <h2 className="inline-flex items-center gap-2 px-2 pt-2 font-bold"><Repeat className="size-5 text-brand" weight="duotone" />تتكرر كل شهر</h2>
+            <h2 className="flex items-center gap-2.5 px-2 pt-2 text-[15px] font-semibold"><span className="flex size-8 items-center justify-center rounded-[10px] bg-brand-soft text-brand"><Repeat className="size-[18px]" weight="duotone" /></span>تتكرر كل شهر</h2>
             <p className="px-2 pb-2 text-xs text-muted">مدفوعات بنفس المبلغ تقريباً كل شهر، وما هي في المصاريف الثابتة</p>
             <ul>
               {candidates.map((c) => <CandidateRow key={c.key} c={c} />)}
@@ -135,15 +135,15 @@ export default function InsightsPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           {habitList.length > 0 && (
             <Card className="p-3">
-              <h2 className="inline-flex items-center gap-2 px-2 pt-2 font-bold"><Storefront className="size-5 text-brand" weight="duotone" />عاداتكم هذا الشهر</h2>
+              <h2 className="flex items-center gap-2.5 px-2 pt-2 text-[15px] font-semibold"><span className="flex size-8 items-center justify-center rounded-[10px] bg-brand-soft text-brand"><Storefront className="size-[18px]" weight="duotone" /></span>عاداتكم هذا الشهر</h2>
               <ul className="mt-2">
                 {habitList.map((h) => (
                   <li key={h.key} className="flex items-center justify-between gap-2 rounded-2xl px-2 py-2.5">
                     <span className="min-w-0">
                       <span className="block truncate font-medium">{h.name}</span>
-                      <span className="text-xs text-muted">{h.count} مرات · متوسط {formatSAR(h.avg)} · {catName(h.categoryId)}</span>
+                      <span className="text-xs text-muted">{h.count} مرات · متوسط <Money value={h.avg} /> · {catName(h.categoryId)}</span>
                     </span>
-                    <span className="num shrink-0 font-semibold">{formatSAR(h.total)}</span>
+                    <span className="num shrink-0 font-semibold"><Money value={h.total} /></span>
                   </li>
                 ))}
               </ul>
@@ -151,7 +151,7 @@ export default function InsightsPage() {
           )}
           {unusual.length > 0 && (
             <Card className="p-3">
-              <h2 className="inline-flex items-center gap-2 px-2 pt-2 font-bold"><Warning className="size-5 text-warn" weight="duotone" />أعلى من المعتاد</h2>
+              <h2 className="flex items-center gap-2.5 px-2 pt-2 text-[15px] font-semibold"><span className="flex size-8 items-center justify-center rounded-[10px] bg-warn-soft text-warn"><Warning className="size-[18px]" weight="duotone" /></span>أعلى من المعتاد</h2>
               <ul className="mt-2">
                 {unusual.map((a) => <AnomalyRow key={a.expense.id} a={a} />)}
               </ul>
@@ -170,7 +170,7 @@ function CandidateRow({ c }: { c: ReturnType<typeof recurringCandidates>[number]
     <li className="flex items-center gap-3 rounded-2xl px-2 py-2.5">
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium">{c.name}</span>
-        <span className="text-xs text-muted">{formatSAR(c.amount)} · حوالي يوم {c.day} · ظهر في {c.months} أشهر</span>
+        <span className="text-xs text-muted"><Money value={c.amount} /> · حوالي يوم {c.day} · ظهر في {c.months} أشهر</span>
       </span>
       <Button variant="secondary" className="h-9 px-3 text-sm" disabled={added} loading={save.isPending}
         onClick={() => save.mutate(
@@ -191,11 +191,11 @@ function AnomalyRow({ a }: { a: ReturnType<typeof anomalies>[number] }) {
         <span className="min-w-0 flex-1">
           <span className="block truncate font-medium">{a.expense.merchant ?? a.expense.description ?? 'عملية'}</span>
           <span className="text-xs text-muted">
-            {formatDayShort(a.expense.expense_date)} · المعتاد {formatSAR(a.typical)} {a.basis === 'category' && '(للتصنيف)'}
+            {formatDayShort(a.expense.expense_date)} · المعتاد <Money value={a.typical} /> {a.basis === 'category' && '(للتصنيف)'}
           </span>
         </span>
         <span className="shrink-0 text-end">
-          <span className="num block font-semibold">{formatSAR(a.expense.amount)}</span>
+          <span className="num block font-semibold"><Money value={a.expense.amount} /></span>
           <span className="num text-xs text-warn">{a.times.toFixed(1)}×</span>
         </span>
       </button>

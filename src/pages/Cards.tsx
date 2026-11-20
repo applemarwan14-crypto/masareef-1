@@ -15,9 +15,9 @@ export default function CardsPage() {
   const who = (id: string | null) => members.find((m) => m.user_id === id)?.display_name;
 
   return (
-    <div className="space-y-4 pt-4">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">البطاقات</h1>
+    <div className="space-y-5">
+      <header className="flex items-end justify-between gap-3 pt-5">
+        <h1 className="display text-[28px]">البطاقات</h1>
         {owner && (
           <Button variant="secondary" className="h-10 px-3 text-sm" onClick={() => setEditing({ open: true })}>
             <Plus className="size-4" weight="bold" /> بطاقة
@@ -41,7 +41,7 @@ export default function CardsPage() {
                   <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px]">{CARD_TYPES[c.card_type]}</span>
                 </div>
                 <p className="num mt-6 text-xl tracking-[.25em]" dir="ltr">•••• {c.last4}</p>
-                <div className="mt-3 flex justify-between text-xs text-white/70">
+                <div className="mt-3 flex justify-between text-xs text-panel-muted">
                   <span>{c.bank}{who(c.user_id) && ` · ${who(c.user_id)}`}</span>
                   <span>رسوم دولية {c.intl_fee_bps / 100}%</span>
                 </div>

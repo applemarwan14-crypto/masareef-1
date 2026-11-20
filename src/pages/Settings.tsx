@@ -5,7 +5,7 @@ import {
   ArrowCounterClockwise, ArrowsClockwise, Bell, CaretLeft, FileText, ChatCircleText, Copy, Crown, MagicWand, PushPin, SignOut, Plus, Tag, Target,
   UserMinus, UsersThree,
 } from '@phosphor-icons/react';
-import { Button, Card, CategoryIcon, ConfirmButton, Field, IconButton, Sheet, cx } from '../components/ui';
+import { Button, Card, CategoryIcon, ConfirmButton, Field, IconButton, Sheet, cx, Toggle } from '../components/ui';
 import { useHousehold, useIsOwner } from '../hooks/household';
 import {
   useCategories, useDeleteCategory, useDisabledKinds, useInvalidate, useSaveCategory, useSaveDisabledKinds, useSnapshots,
@@ -24,17 +24,17 @@ import type { Category, OrganizePlan } from '../lib/types';
 
 export default function Settings() {
   return (
-    <div className="space-y-5 pt-4">
-      <h1 className="text-xl font-bold">الإعدادات</h1>
+    <div className="space-y-5">
+      <h1 className="display pt-5 text-[28px]">الإعدادات</h1>
       <BudgetSection />
       <NotificationsSection />
       <SmsSection />
       <FamilySection />
       <CategoriesSection />
-      <Link to="/statements" className="flex items-center gap-3 rounded-card bg-surface p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04)] active:opacity-80">
+      <Link to="/statements" className="flex items-center gap-3 surface p-5  active:opacity-80">
         <FileText className="size-5 text-brand" weight="duotone" />
         <span className="flex-1">
-          <span className="block font-bold">كشوفات البنك</span>
+          <span className="block font-semibold">كشوفات البنك</span>
           <span className="text-xs text-muted">الكشوفات المرفوعة، منفصلة عن مصاريفك</span>
         </span>
         <CaretLeft className="size-4 text-muted" weight="bold" />
@@ -67,7 +67,7 @@ function BudgetSection() {
 
   return (
     <Card>
-      <h2 className="inline-flex items-center gap-2 font-bold"><Target className="size-5 text-brand" weight="duotone" />الميزانية الشهرية</h2>
+      <h2 className="flex items-center gap-2.5 text-[15px] font-semibold"><span className="flex size-8 items-center justify-center rounded-[10px] bg-brand-soft text-brand"><Target className="size-[18px]" weight="duotone" /></span>الميزانية الشهرية</h2>
       <p className="mt-1 text-sm text-muted">
         {household.monthly_budget ? `الحالية: ${formatSAR(household.monthly_budget)}` : 'لم تُحدَّد بعد. اتركها فارغة لإلغائها.'}
         {' '}مصاريف الرحلات خارجها.
@@ -120,7 +120,7 @@ function NotificationsSection() {
 
   return (
     <Card className="space-y-4">
-      <h2 className="inline-flex items-center gap-2 font-bold"><Bell className="size-5 text-brand" weight="duotone" />الإشعارات</h2>
+      <h2 className="flex items-center gap-2.5 text-[15px] font-semibold"><span className="flex size-8 items-center justify-center rounded-[10px] bg-brand-soft text-brand"><Bell className="size-[18px]" weight="duotone" /></span>الإشعارات</h2>
       <div className="rounded-2xl bg-surface-2 p-4">
         <p className="text-sm leading-relaxed">{state ? PUSH_HINT[state] : '…'}</p>
         {(state === 'off' || state === 'on') && (
@@ -142,14 +142,14 @@ function NotificationsSection() {
           const on = !disabled.includes(kind);
           return (
             <li key={kind}>
-              <label className="flex items-center justify-between gap-3 py-2.5">
-                <span>
-                  <span className="block font-medium">{label}</span>
-                  <span className="text-xs text-muted">{hint}</span>
+              <div className="flex items-center justify-between gap-3 py-3">
+                <span className="min-w-0">
+                  <span className="block text-[14px] font-medium">{label}</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-muted">{hint}</span>
                 </span>
-                <input type="checkbox" checked={on} className="size-5 shrink-0 accent-[var(--color-brand)]"
+                <Toggle checked={on} label={label}
                   onChange={() => saveKinds.mutate(on ? [...disabled, kind] : disabled.filter((k) => k !== kind))} />
-              </label>
+              </div>
             </li>
           );
         })}
@@ -170,7 +170,7 @@ function SmsSection() {
 
   return (
     <Card className="space-y-3">
-      <h2 className="inline-flex items-center gap-2 font-bold"><ChatCircleText className="size-5 text-brand" weight="duotone" />رسائل البنك</h2>
+      <h2 className="flex items-center gap-2.5 text-[15px] font-semibold"><span className="flex size-8 items-center justify-center rounded-[10px] bg-brand-soft text-brand"><ChatCircleText className="size-[18px]" weight="duotone" /></span>رسائل البنك</h2>
       <p className="text-sm leading-relaxed text-muted">
         اختصار في الآيفون يرسل رسالة البنك (أو أبشر) للتطبيق، وClaude يقرأها ويسجّلها: المبلغ، المتجر، البطاقة، الدولة والعملة.
         الإشعار يوصلك من التطبيق نفسه، فاحذف خطوة «إظهار الإشعار» من الاختصار.
@@ -239,7 +239,7 @@ function FamilySection() {
 
   return (
     <Card className="space-y-4">
-      <h2 className="inline-flex items-center gap-2 font-bold"><UsersThree className="size-5 text-brand" weight="duotone" />العائلة</h2>
+      <h2 className="flex items-center gap-2.5 text-[15px] font-semibold"><span className="flex size-8 items-center justify-center rounded-[10px] bg-brand-soft text-brand"><UsersThree className="size-[18px]" weight="duotone" /></span>العائلة</h2>
       <form className="space-y-3" onSubmit={(e) => {
         e.preventDefault();
         if (!name.trim() || !familyName.trim()) return toast.error('الأسماء لا يمكن أن تكون فارغة');
@@ -280,7 +280,7 @@ function FamilySection() {
       <div className="rounded-2xl border border-dashed border-line p-4">
         <p className="text-sm text-muted">شارك هذا الرمز مع أفراد العائلة ليسجّلوا وينضموا إلى نفس الحساب العائلي:</p>
         <div className="mt-3 flex items-center gap-2">
-          <code dir="ltr" className="flex-1 rounded-xl bg-surface-2 py-2.5 text-center text-xl font-bold tracking-[.3em]">
+          <code dir="ltr" className="flex-1 rounded-xl bg-surface-2 py-2.5 text-center display text-[28px] tracking-[.3em]">
             {household.invite_code}
           </code>
           <IconButton label="نسخ الرمز" onClick={copyCode}><Copy className="size-5" weight="bold" /></IconButton>
@@ -304,7 +304,7 @@ function CategoriesSection() {
   return (
     <Card className="p-3">
       <div className="flex items-center justify-between px-2 pt-2">
-        <h2 className="inline-flex items-center gap-2 font-bold"><Tag className="size-5 text-brand" weight="duotone" />التصنيفات</h2>
+        <h2 className="flex items-center gap-2.5 text-[15px] font-semibold"><span className="flex size-8 items-center justify-center rounded-[10px] bg-brand-soft text-brand"><Tag className="size-[18px]" weight="duotone" /></span>التصنيفات</h2>
         {owner && (
           <Button variant="ghost" className="h-9 px-3 text-sm" onClick={() => setEditing({ open: true })}>
             <Plus className="size-4" weight="bold" /> تصنيف جديد
@@ -452,13 +452,13 @@ function CategoryForm({ item, nextOrder, onDone }: { item?: Category; nextOrder:
           <PushPin className="size-4" weight="fill" /> تصنيف أساسي مثبّت: تقدر تغيّر اسمه وشكله، لكن ما ينحذف ولا يتأرشف.
         </p>
       ) : item && (
-        <label className="flex items-center justify-between rounded-2xl bg-surface-2 px-4 py-3">
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-surface p-4 shadow-[var(--shadow-card)]">
           <span>
             <span className="block font-medium">أرشفة</span>
             <span className="text-xs text-muted">يختفي من شاشة الإضافة، وتبقى عملياته السابقة</span>
           </span>
-          <input type="checkbox" checked={archived} onChange={(e) => setArchived(e.target.checked)} className="size-5 accent-[var(--color-brand)]" />
-        </label>
+          <Toggle checked={archived} onChange={setArchived} label="أرشفة" />
+        </div>
       )}
       <div className="flex gap-2">
         <Button type="submit" loading={save.isPending} className="flex-1">{item ? 'حفظ التعديل' : 'إضافة'}</Button>

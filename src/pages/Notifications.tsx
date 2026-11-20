@@ -28,9 +28,9 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="space-y-4 pt-4">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">الإشعارات</h1>
+    <div className="space-y-5">
+      <header className="flex items-end justify-between gap-3 pt-5">
+        <h1 className="display text-[28px]">الإشعارات</h1>
         {unread && (
           <Button variant="ghost" className="h-9 px-3 text-sm" onClick={() => markAllRead().then(() => invalidate('notifications'))}>
             <Checks className="size-4" weight="bold" /> قراءة الكل
@@ -46,14 +46,14 @@ export default function NotificationsPage() {
             return (
               <li key={n.id}>
                 <button type="button" onClick={() => open(n)}
-                  className={cx('flex w-full items-start gap-3 rounded-2xl p-3 text-start transition hover:bg-surface-2', !n.read_at && 'bg-surface shadow-[0_1px_2px_rgb(0_0_0/0.04)]')}>
+                  className={cx('flex w-full items-start gap-3 rounded-2xl p-3 text-start transition hover:bg-surface-2', !n.read_at && 'bg-surface shadow-[var(--shadow-card)]')}>
                   <span className={cx('flex size-10 shrink-0 items-center justify-center rounded-2xl',
                     n.kind === 'duplicate' || n.kind === 'sms_failed' || n.kind === 'budget' ? 'bg-warn/15 text-warn' : 'bg-brand-soft text-brand')}>
                     <Glyph className="size-5" weight="duotone" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center justify-between gap-2">
-                      <span className={cx('truncate', !n.read_at ? 'font-bold' : 'font-medium')}>{n.title}</span>
+                      <span className={cx('truncate', !n.read_at ? 'font-semibold' : 'font-medium')}>{n.title}</span>
                       <span className="shrink-0 text-[11px] text-muted">{formatDayLabel(n.created_at.slice(0, 10), todayISO())}</span>
                     </span>
                     <span className="mt-0.5 block text-sm leading-relaxed text-muted">{n.body}</span>

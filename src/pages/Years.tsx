@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Archive, FileXls, Stack, TrendDown, TrendUp } from '@phosphor-icons/react';
-import { Button, Card, ConfirmButton, EmptyState, Spinner, cx } from '../components/ui';
+import { Button, Card, ConfirmButton, EmptyState, Spinner, cx, Money } from '../components/ui';
 import { useHousehold, useIsOwner } from '../hooks/household';
 import { useCategories, useInvalidate, useMonthlyTotals, useTrips, useYearOverview } from '../hooks/queries';
 import { archiveYear, fetchExpenses } from '../lib/api';
 import { formatMonthShort, monthOf, todayISO } from '../lib/dates';
 import { exportExcel } from '../lib/export';
-import { formatSAR } from '../lib/money';
+
 import { yearComparison } from '../lib/stats';
 
 export default function YearsPage() {
@@ -21,20 +21,20 @@ export default function YearsPage() {
   const max = Math.max(...cmp.months.flatMap((m) => [m.current, m.previous]), 1);
 
   return (
-    <div className="space-y-4 pt-4">
-      <h1 className="text-xl font-bold">السنوات</h1>
+    <div className="space-y-5">
+      <h1 className="display text-[28px]">السنوات</h1>
 
       <Card>
-        <h2 className="font-bold">{year} مقابل {year - 1}</h2>
+        <h2 className="font-semibold">{year} مقابل {year - 1}</h2>
         <p className="mb-4 text-xs text-muted">مقارنة عادلة بنفس الأشهر: يناير حتى {formatMonthShort(monthOf(today))} من السنتين (بدون الرحلات)</p>
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-brand-soft p-3">
             <p className="text-xs text-muted">{year}</p>
-            <p className="num text-xl font-bold text-brand">{formatSAR(cmp.current)}</p>
+            <p className="num display text-[28px] text-brand"><Money value={cmp.current} /></p>
           </div>
           <div className="rounded-2xl bg-surface-2 p-3">
             <p className="text-xs text-muted">{year - 1} (نفس الفترة)</p>
-            <p className="num text-xl font-bold">{formatSAR(cmp.previous)}</p>
+            <p className="num display text-[28px]"><Money value={cmp.previous} /></p>
           </div>
         </div>
         {cmp.change !== null && (
@@ -58,7 +58,7 @@ export default function YearsPage() {
 
       {isPending ? <Spinner /> : years.length === 0 ? <EmptyState icon={Stack} title="ما في بيانات بعد" /> : (
         <Card className="p-3">
-          <h2 className="px-2 pt-2 font-bold">كل السنوات</h2>
+          <h2 className="px-2 pt-2 font-semibold">كل السنوات</h2>
           <ul className="mt-2">
             {years.map((y) => <YearRow key={y.year} row={y} current={year} />)}
           </ul>
@@ -110,11 +110,11 @@ function YearRow({ row, current }: { row: { year: number; total: number; tx_coun
     <li className="rounded-2xl px-2 py-3">
       <div className="flex items-center justify-between gap-2">
         <span>
-          <span className="font-bold">{row.year}</span>
+          <span className="font-semibold">{row.year}</span>
           {row.archived && <span className="ms-2 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-muted">مؤرشفة</span>}
-          <span className="block text-xs text-muted">{row.tx_count} عملية · {row.months} أشهر · متوسط {formatSAR(Math.round(row.total / Math.max(row.months, 1)))}/شهر</span>
+          <span className="block text-xs text-muted">{row.tx_count} عملية · {row.months} أشهر · متوسط <Money value={Math.round(row.total / Math.max(row.months, 1))} />/شهر</span>
         </span>
-        <span className="num font-bold">{formatSAR(row.total)}</span>
+        <span className="num font-semibold"><Money value={row.total} /></span>
       </div>
       {canArchive && !row.archived && (
         <div className="mt-3 flex flex-wrap gap-2">

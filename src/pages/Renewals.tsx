@@ -4,12 +4,12 @@ import {
   Car, CalendarCheck, CheckCircle, IdentificationCard, House, MagicWand, Plus, ShieldCheck, Television, Umbrella,
   type Icon,
 } from '@phosphor-icons/react';
-import { Button, ConfirmButton, EmptyState, Field, Select, Sheet, Spinner, cx } from '../components/ui';
+import { Button, ConfirmButton, EmptyState, Field, Select, Sheet, Spinner, cx, Money } from '../components/ui';
 import { useDeleteRenewal, useRenewals, useSaveRenewal } from '../hooks/queries';
 import { parseRenewalText, type ParsedRenewalText } from '../lib/api';
 import { formatDayShort, todayISO } from '../lib/dates';
 import { RENEWAL_KINDS } from '../lib/labels';
-import { formatSAR, parseAmount, toInputValue } from '../lib/money';
+import { parseAmount, toInputValue } from '../lib/money';
 import type { Renewal, RenewalKind } from '../lib/types';
 
 const KIND_ICON: Record<RenewalKind, Icon> = {
@@ -38,9 +38,9 @@ export default function RenewalsPage() {
   const done = data.filter((r) => r.status !== 'active');
 
   return (
-    <div className="space-y-4 pt-4">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">التجديدات والضمانات</h1>
+    <div className="space-y-5">
+      <header className="flex items-end justify-between gap-3 pt-5">
+        <h1 className="display text-[28px]">التجديدات والضمانات</h1>
         <Button variant="secondary" className="h-10 px-3 text-sm" onClick={() => setEditing({ open: true })}>
           <Plus className="size-4" weight="bold" /> إضافة
         </Button>
@@ -80,26 +80,34 @@ export default function RenewalsPage() {
   );
 }
 
+/** التجديد على شكل تذكرة: العدّاد التنازلي بارز على الطرف */
 function RenewalRow({ r, today, onOpen }: { r: Renewal; today: string; onOpen: () => void }) {
   const Glyph = KIND_ICON[r.kind];
   const n = daysLeft(r.due_date, today);
   const urgent = r.status === 'active' && n <= r.remind_days;
+  const tone = n < 0 ? 'text-danger' : urgent ? 'text-warn' : 'text-ink';
   return (
     <li>
-      <button type="button" onClick={onOpen}
-        className="flex w-full items-center gap-3 rounded-card bg-surface p-3.5 text-start shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
-        <span className={cx('flex size-11 shrink-0 items-center justify-center rounded-2xl', urgent ? 'bg-warn/15 text-warn' : 'bg-brand-soft text-brand')}>
-          <Glyph className="size-6" weight="duotone" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate font-semibold">{r.title}{r.person && <span className="font-normal text-muted"> · {r.person}</span>}</span>
-          <span className="text-xs text-muted">{formatDayShort(r.due_date)} · {hijri(r.due_date)}</span>
-        </span>
-        <span className="shrink-0 text-end">
-          <span className={cx('block text-sm font-semibold', n < 0 ? 'text-danger' : urgent ? 'text-warn' : 'text-muted')}>
-            {r.status === 'done' ? 'تم' : leftLabel(n)}
+      <button type="button" onClick={onOpen} className="press ticket surface flex w-full items-stretch text-start"
+        style={{ ['--notch-at' as string]: '50%' }}>
+        <span className="flex min-w-0 flex-1 items-center gap-3 p-4">
+          <span className={cx('flex size-11 shrink-0 items-center justify-center rounded-[14px]', urgent ? 'bg-warn-soft text-warn' : 'bg-surface-2 text-ink-2')}>
+            <Glyph className="size-[22px]" weight="duotone" />
           </span>
-          {r.amount && <span className="num text-xs text-muted">{formatSAR(r.amount)}</span>}
+          <span className="min-w-0">
+            <span className="block truncate text-[15px] font-medium">{r.title}</span>
+            <span className="mt-0.5 block truncate text-xs text-muted">
+              {r.person ? `${r.person} · ` : ''}{formatDayShort(r.due_date)} · {hijri(r.due_date)}
+            </span>
+            {r.amount && <Money value={r.amount} className="mt-1 text-[13px] font-medium text-ink-2" />}
+          </span>
+        </span>
+        <span className="my-3 w-px border-s border-dashed border-line-strong" />
+        <span className="flex w-[84px] shrink-0 flex-col items-center justify-center px-2 text-center">
+          {r.status === 'done' ? <span className="text-sm font-medium text-brand">تم ✓</span> : n >= 0 && n < 60 ? (<>
+            <span className={cx('num display text-[26px]', tone)}>{n}</span>
+            <span className="mt-1 text-[11px] text-muted">{n === 0 ? 'اليوم' : n === 1 ? 'يوم' : 'يوم باقي'}</span>
+          </>) : <span className={cx('text-[13px] font-medium', tone)}>{leftLabel(n)}</span>}
         </span>
       </button>
     </li>
