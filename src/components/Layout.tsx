@@ -92,7 +92,7 @@ export function Layout({ children }: { children: ReactNode }) {
           ))}
         </aside>
 
-        <main className="pt-safe min-w-0 flex-1 px-4 pb-40 md:px-10 md:pb-16">
+        <main className="pt-safe min-w-0 flex-1 px-4 pb-[calc(env(safe-area-inset-bottom)+84px)] md:px-10 md:pb-16">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div key={location.pathname}
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
@@ -103,14 +103,18 @@ export function Layout({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      {/* شريط عائم للجوال: لوحة حبر مع زر الإضافة في المنتصف */}
-      <nav className="bottom-safe fixed inset-x-3 z-30 md:hidden" aria-label="التنقل">
-        <div className="mx-auto flex max-w-md items-center rounded-[26px] bg-panel p-1.5 shadow-[var(--shadow-dock)]">
+      {/* شريط التبويبات: ملتصق بأسفل الشاشة بعرضها كامل مثل تطبيقات الآيفون، ويحسب مساحة مؤشر الرجوع */}
+      <nav aria-label="التنقل"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface md:hidden"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="mx-auto grid h-[58px] max-w-md grid-cols-5 items-center px-1">
           {DOCK.slice(0, 2).map((n) => <DockLink key={n.to} {...n} />)}
-          <button onClick={() => open()} aria-label="إضافة مصروف"
-            className="press mx-1 flex size-[52px] shrink-0 items-center justify-center rounded-[20px] bg-brand text-brand-ink">
-            <Plus className="size-6" weight="bold" />
-          </button>
+          <div className="flex justify-center">
+            <button onClick={() => open()} aria-label="إضافة مصروف"
+              className="press flex h-11 w-14 items-center justify-center rounded-2xl bg-brand text-brand-ink">
+              <Plus className="size-6" weight="bold" />
+            </button>
+          </div>
           {DOCK.slice(2).map((n) => <DockLink key={n.to} {...n} badge={n.to === '/more' ? unread : 0} />)}
         </div>
       </nav>
@@ -135,16 +139,12 @@ export function CountBadge({ n }: { n: number }) {
 
 function DockLink({ to, label, icon: NavIcon, end, badge = 0 }: NavItem & { badge?: number }) {
   return (
-    <NavLink to={to} end={end} className="relative flex h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-[20px]">
+    <NavLink to={to} end={end} className="relative flex h-full flex-col items-center justify-center gap-[3px]">
       {({ isActive }) => (<>
-        {isActive && (
-          <motion.span layoutId="dock-active" className="absolute inset-0 rounded-[20px] bg-white/[.08]"
-            transition={{ type: 'spring', stiffness: 500, damping: 40 }} />
-        )}
-        <NavIcon className={cx('relative size-[22px] transition-colors', isActive ? 'text-brand-bright' : 'text-panel-muted')}
+        <NavIcon className={cx('size-[25px] transition-colors', isActive ? 'text-brand' : 'text-muted')}
           weight={isActive ? 'fill' : 'regular'} />
-        <span className={cx('relative text-[10px] font-medium transition-colors', isActive ? 'text-panel-ink' : 'text-panel-muted')}>{label}</span>
-        {badge > 0 && <span className="absolute end-[18%] top-1"><CountBadge n={badge} /></span>}
+        <span className={cx('text-[10px] font-medium transition-colors', isActive ? 'text-brand' : 'text-muted')}>{label}</span>
+        {badge > 0 && <span className="absolute end-[22%] top-1.5"><CountBadge n={badge} /></span>}
       </>)}
     </NavLink>
   );
